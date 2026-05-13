@@ -67,8 +67,13 @@ const mikvehChecklistIcons: Record<string, LucideIcon> = {
   "final-review": CheckCircle2,
 };
 
-const dateInputClass =
-  "w-full rounded-2xl border border-white/70 bg-white/85 px-4 py-3 pl-12 text-base text-slate-800 shadow-sm outline-none transition focus:border-brand-rose focus:ring-2 focus:ring-brand-rose/35";
+const dateFieldShellClass =
+  "relative mt-3 overflow-hidden rounded-2xl border border-white/70 bg-white/90 shadow-sm transition focus-within:border-brand-rose focus-within:ring-2 focus-within:ring-brand-rose/35";
+
+const dateFieldDisplayClass =
+  "flex min-h-[3.25rem] items-center justify-between gap-3 px-4 py-3 pr-4 pl-12 text-base text-slate-800";
+
+const dateInputClass = "native-date-input absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0";
 
 export default function FamilyPurityApp() {
   const tracker = useStore(trackerStore);
@@ -377,10 +382,10 @@ export default function FamilyPurityApp() {
                 <button
                   aria-checked={tracker.hefsekConfirmed}
                   className={[
-                    "flex w-full items-start justify-between gap-4 rounded-[1.75rem] border px-5 py-4 text-right transition duration-300",
+                    "relative flex w-full items-start gap-4 rounded-[1.75rem] border-2 px-5 py-4 text-right transition duration-300",
                     tracker.hefsekConfirmed
                       ? "border-status-olive bg-status-sage/65"
-                      : "attention-pulse border-brand-rose/60 bg-white/85 shadow-blush hover:bg-white",
+                      : "attention-pulse attention-ring border-brand-rose/75 bg-white/88 shadow-blush hover:bg-white",
                   ].join(" ")}
                   role="switch"
                   type="button"
@@ -395,24 +400,22 @@ export default function FamilyPurityApp() {
                       </p>
                     </div>
                   </div>
-                  <div className="pt-0.5">
-                    <SuccessIndicator checked={tracker.hefsekConfirmed} />
-                  </div>
                 </button>
               </div>
             </div>
 
-            <div className="mt-8 flex flex-wrap gap-3" data-stage-item>
-              <Button onClick={() => setActivePhase("period")} variant="ghost">
-                <ArrowRight className="nav-icon-back h-4 w-4 shrink-0" />
-                חזרה לימי הנדודים
-              </Button>
+            <div className="mt-8 grid gap-3 sm:flex sm:flex-wrap" data-stage-item>
               <Button
+                className="w-full sm:w-auto"
                 disabled={!tracker.hefsekConfirmed}
                 onClick={() => setActivePhase("clean-days")}
               >
                 פתיחת שבעה נקיים
                 <ArrowLeft className="nav-icon-next h-4 w-4 shrink-0" />
+              </Button>
+              <Button className="w-full sm:w-auto" onClick={() => setActivePhase("period")} variant="ghost">
+                <ArrowRight className="nav-icon-back h-4 w-4 shrink-0" />
+                חזרה לימי הנדודים
               </Button>
             </div>
           </Card>
@@ -529,14 +532,14 @@ export default function FamilyPurityApp() {
               לתחילת מחזור חדש. בכל ספק הלכתי, מומלץ להתייעץ עם רב מלווה.
             </div>
 
-            <div className="mt-8 flex flex-wrap gap-3" data-stage-item>
-              <Button onClick={() => setActivePhase("hefsek")} variant="ghost">
-                <ArrowRight className="nav-icon-back h-4 w-4 shrink-0" />
-                חזרה להפסק טהרה
-              </Button>
-              <Button disabled={!mikvehReady} onClick={moveToMikvehPhase}>
+            <div className="mt-8 grid gap-3 sm:flex sm:flex-wrap" data-stage-item>
+              <Button className="w-full sm:w-auto" disabled={!mikvehReady} onClick={moveToMikvehPhase}>
                 מעבר לשלב הטבילה
                 <ArrowLeft className="nav-icon-next h-4 w-4 shrink-0" />
+              </Button>
+              <Button className="w-full sm:w-auto" onClick={() => setActivePhase("hefsek")} variant="ghost">
+                <ArrowRight className="nav-icon-back h-4 w-4 shrink-0" />
+                חזרה להפסק טהרה
               </Button>
             </div>
           </Card>
@@ -554,7 +557,7 @@ export default function FamilyPurityApp() {
                   עצמה היא בלילה אחרי צאת הכוכבים.
                 </p>
 
-                <div className="mt-6 rounded-[2rem] border border-white/80 bg-white/78 p-5">
+                <div className="mt-6 rounded-[2rem] bg-[#cff9e4] p-5 shadow-none">
                   <InfoLabel label="ליל הטבילה" />
                   <p className="mt-2 text-2xl font-semibold text-slate-900">
                     {formatDisplayDate(tracker.mikvehNightDate)}
@@ -562,7 +565,7 @@ export default function FamilyPurityApp() {
                   <p className="mt-2 text-sm text-slate-600">הגעה לטבילה: אחרי צאת הכוכבים.</p>
                 </div>
 
-                <div className="mt-4 rounded-[2rem] border border-white/80 bg-white/78 p-5">
+                <div className="mt-4 rounded-[2rem] bg-[#cff9e4] p-5 shadow-none">
                   <InfoLabel label="התקדמות בהכנות" />
                   <p className="mt-2 text-2xl font-semibold text-slate-900">
                     {preparationCompleted}/{tracker.mikvehChecklist.length}
@@ -606,7 +609,6 @@ export default function FamilyPurityApp() {
                                 <p className="mt-1 text-sm text-slate-600">{item.description}</p>
                               </div>
                             </div>
-                            <SuccessIndicator checked={item.checked} />
                           </div>
                         </div>
                       </div>
@@ -618,16 +620,22 @@ export default function FamilyPurityApp() {
 
             {allPreparationsComplete ? (
               <div
-                className="mt-6 rounded-3xl border border-status-olive/75 bg-white/78 p-4 text-slate-800"
+                className="prayer-celebration mt-6 rounded-3xl border border-status-olive/35 bg-white/82 p-5 text-slate-800"
                 data-stage-item
               >
-                כל ההכנות סומנו. מומלץ לבצע סקירה אחרונה סמוך ככל האפשר לטבילה
-                ולהמשיך בנחת.
+                <div className="flex flex-col items-center text-center">
+                  <PrayerHandsIllustration className="prayer-illustration h-28 w-28 text-text-plum" />
+                  <h3 className="mt-3 font-heading text-3xl text-text-plum">בעזרת השם נעשה ונצליח</h3>
+                  <p className="mt-2 max-w-md text-sm text-slate-700">
+                    כל ההכנות סומנו. מומלץ לבצע סקירה אחרונה סמוך ככל האפשר לטבילה
+                    ולהמשיך בנחת.
+                  </p>
+                </div>
               </div>
             ) : null}
 
-            <div className="mt-8 flex flex-wrap gap-3" data-stage-item>
-              <Button onClick={() => setActivePhase("clean-days")} variant="ghost">
+            <div className="mt-8 grid gap-3 sm:flex sm:flex-wrap" data-stage-item>
+              <Button className="w-full sm:w-auto" onClick={() => setActivePhase("clean-days")} variant="ghost">
                 <ArrowRight className="nav-icon-back h-4 w-4 shrink-0" />
                 חזרה לשבעה נקיים
               </Button>
@@ -771,30 +779,40 @@ interface DateInputFieldProps {
 
 function DateInputField({ label, min, onChange, value }: DateInputFieldProps) {
   const hasValue = Boolean(value);
+  const displayValue = hasValue ? formatDisplayDate(value) : "לחצי לבחירת תאריך";
 
   return (
     <label className="mt-6 block max-w-xl text-sm font-semibold text-slate-700">
       {label}
-      <div className="relative mt-3">
+      <div className={dateFieldShellClass}>
         <input
           className={dateInputClass}
-          dir="ltr"
           min={min}
           type="date"
           value={value}
           onChange={(event) => onChange(event.target.value)}
         />
-        <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center">
-          {hasValue ? (
-            <span className="date-status-success inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-              <Check className="h-4 w-4" />
-            </span>
-          ) : (
-            <span className="date-status-prompt inline-flex h-7 w-7 items-center justify-center rounded-full bg-brand-blush/70 text-text-plum">
-              <Hand className="h-4 w-4" />
-            </span>
-          )}
-        </span>
+        <div className={dateFieldDisplayClass}>
+          <span
+            className={[
+              "flex-1 truncate text-right",
+              hasValue ? "text-slate-900" : "text-slate-400",
+            ].join(" ")}
+          >
+            {displayValue}
+          </span>
+          <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center">
+            {hasValue ? (
+              <span className="date-status-success inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                <Check className="h-4 w-4" />
+              </span>
+            ) : (
+              <span className="date-status-prompt inline-flex h-7 w-7 items-center justify-center rounded-full bg-brand-blush/70 text-text-plum">
+                <Hand className="h-4 w-4" />
+              </span>
+            )}
+          </span>
+        </div>
       </div>
     </label>
   );
@@ -811,26 +829,14 @@ function StatusCheckbox({
     <span
       aria-hidden="true"
       className={[
-        "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border transition",
+        "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border-2 transition",
         checked
-          ? "border-emerald-300 bg-emerald-100 text-emerald-600 shadow-sm"
-          : "border-brand-rose/45 bg-white/90 text-transparent",
+          ? "border-emerald-400 bg-emerald-100 text-emerald-600 shadow-sm"
+          : "border-brand-rose/75 bg-white/95 text-transparent shadow-[0_0_0_2px_rgba(231,162,177,0.12)]",
         className,
       ].join(" ")}
     >
       <Check className="h-3.5 w-3.5" />
-    </span>
-  );
-}
-
-function SuccessIndicator({ checked }: { checked: boolean }) {
-  if (!checked) {
-    return null;
-  }
-
-  return (
-    <span className="date-status-success inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 shadow-sm">
-      <Check className="h-4 w-4" />
     </span>
   );
 }
@@ -891,6 +897,54 @@ function CheckSlotControl({
         </Button>
       </div>
     </div>
+  );
+}
+
+function PrayerHandsIllustration({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 160 160"
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <circle cx="80" cy="80" r="62" fill="rgba(207, 249, 228, 0.65)" />
+      <path
+        d="M78 118C73 108 70 95 67 84C64 72 58 59 49 47C43 39 34 41 34 50C34 57 40 65 44 73C49 84 50 96 55 108C58 116 67 122 78 118Z"
+        fill="#F7D7DF"
+        stroke="#AF6977"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M82 118C87 108 90 95 93 84C96 72 102 59 111 47C117 39 126 41 126 50C126 57 120 65 116 73C111 84 110 96 105 108C102 116 93 122 82 118Z"
+        fill="#F7D7DF"
+        stroke="#AF6977"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M68 78C68 61 72 45 80 34C88 45 92 61 92 78"
+        stroke="#875664"
+        strokeWidth="4"
+        strokeLinecap="round"
+      />
+      <path
+        d="M61 126C67 131 73 134 80 134C87 134 93 131 99 126"
+        stroke="#C5966F"
+        strokeWidth="4"
+        strokeLinecap="round"
+      />
+      <path
+        d="M80 24L82.8 31.2L90 34L82.8 36.8L80 44L77.2 36.8L70 34L77.2 31.2L80 24Z"
+        fill="#E7A2B1"
+      />
+      <circle cx="107" cy="35" r="4" fill="#F0AABD" />
+      <circle cx="53" cy="40" r="3.5" fill="#DCAA86" />
+    </svg>
   );
 }
 

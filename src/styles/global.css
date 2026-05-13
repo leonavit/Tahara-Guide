@@ -127,6 +127,63 @@ body {
     animation: date-success-pop 0.45s ease-out;
   }
 
+  .native-date-input {
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+    color: transparent;
+  }
+
+  .native-date-input::-webkit-calendar-picker-indicator {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .native-date-input::-webkit-datetime-edit,
+  .native-date-input::-webkit-datetime-edit-fields-wrapper,
+  .native-date-input::-webkit-datetime-edit-text,
+  .native-date-input::-webkit-datetime-edit-month-field,
+  .native-date-input::-webkit-datetime-edit-day-field,
+  .native-date-input::-webkit-datetime-edit-year-field {
+    color: transparent;
+  }
+
+  .attention-ring {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .attention-ring > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .attention-ring::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    padding: 2px;
+    background: conic-gradient(
+      from 0deg,
+      rgba(231, 162, 177, 0.95),
+      rgba(135, 86, 100, 0.9),
+      rgba(231, 162, 177, 0.95)
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    animation: attention-ring-spin 3.6s linear infinite;
+  }
+
   .phase-chip {
     position: relative;
     overflow: hidden;
@@ -204,6 +261,31 @@ body {
       radial-gradient(circle, rgba(255, 255, 255, 0.18) 0 10%, transparent 11%);
     opacity: 0.42;
     animation: stage-orbit 14s ease-in-out infinite;
+  }
+
+  .prayer-celebration {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .prayer-celebration::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 50% 18%, rgba(207, 249, 228, 0.9), transparent 36%),
+      radial-gradient(circle at 82% 24%, rgba(255, 255, 255, 0.65), transparent 18%);
+    pointer-events: none;
+  }
+
+  .prayer-celebration > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .prayer-illustration {
+    animation: prayer-float 3.6s ease-in-out infinite;
+    filter: drop-shadow(0 18px 30px rgba(135, 86, 100, 0.16));
   }
 }
 
@@ -311,6 +393,16 @@ body {
   }
 }
 
+@keyframes attention-ring-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 @keyframes phase-chip-drift {
   0% {
     transform: translate3d(0, 0, 0);
@@ -336,16 +428,29 @@ body {
   }
 }
 
+@keyframes prayer-float {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+
+  50% {
+    transform: translateY(-8px) scale(1.03);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hero-bloom,
   .attention-pulse,
+  .attention-ring::before,
   .nav-icon-back,
   .nav-icon-next,
   .reset-spin,
   .date-status-prompt,
   .date-status-success,
   .phase-chip::after,
-  .stage-ornament::after {
+  .stage-ornament::after,
+  .prayer-illustration {
     animation: none;
   }
 }
