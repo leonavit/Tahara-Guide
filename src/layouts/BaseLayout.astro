@@ -12,6 +12,7 @@ const {
 } = Astro.props;
 
 const baseUrl = import.meta.env.BASE_URL;
+const assetBase = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
 ---
 
 <!doctype html>
@@ -25,9 +26,9 @@ const baseUrl = import.meta.env.BASE_URL;
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="טהרה" />
-    <link rel="manifest" href={`${baseUrl}manifest.webmanifest`} />
-    <link rel="icon" href={`${baseUrl}pwa/icon.svg`} type="image/svg+xml" />
-    <link rel="apple-touch-icon" href={`${baseUrl}pwa/apple-touch-icon.png`} />
+    <link rel="manifest" href={`${assetBase}manifest.webmanifest`} />
+    <link rel="icon" href={`${assetBase}pwa/icon.svg`} type="image/svg+xml" />
+    <link rel="apple-touch-icon" href={`${assetBase}pwa/apple-touch-icon.png`} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -38,10 +39,10 @@ const baseUrl = import.meta.env.BASE_URL;
   </head>
   <body>
     <slot />
-    <script is:inline define:vars={{ baseUrl }}>
+    <script is:inline define:vars={{ assetBase }}>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
-          navigator.serviceWorker.register(`${baseUrl}sw.js`).catch(() => {
+          navigator.serviceWorker.register(`${assetBase}sw.js`).catch(() => {
             // Ignore registration errors so the app still loads normally.
           });
         });
