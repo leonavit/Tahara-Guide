@@ -1,0 +1,933 @@
+import { useStore } from "@nanostores/react";
+import { gsap } from "gsap";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  ArrowDown,
+  Check,
+  CheckCircle2,
+  Droplets,
+  Hand,
+  Info,
+  MoonStar,
+  RefreshCcw,
+  Scissors,
+  Sparkles,
+  Sunset,
+  Waves,
+  type LucideIcon,
+} from "lucide-react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  PHASES,
+  calculateCleanDayStart,
+  calculateEarliestHefsekDate,
+  canEnterMikvehPhase,
+  dayHasMandatoryCompletion,
+  formatDisplayDate,
+  getCompletedChecksCount,
+  getMandatoryCompletionCount,
+  getUnlockedPhases,
+  type CheckSlot,
+  type CheckStatus,
+  type PhaseId,
+} from "../../lib/tracker";
+import {
+  beginHefsekPhase,
+  dismissWarning,
+  initializeTrackerStore,
+  moveToMikvehPhase,
+  restartTracker,
+  setActivePhase,
+  setCleanDayStatus,
+  setHefsekConfirmed,
+  setHefsekDate,
+  setPeriodStartDate,
+  toggleMikvehChecklistItem,
+  trackerStore,
+} from "../../stores/tracker";
+import { Button } from "../ui/Button";
+import { Card } from "../ui/Card";
+import { StageContainer } from "./StageContainer";
+
+const phaseIcons: Record<PhaseId, LucideIcon> = {
+  period: Droplets,
+  hefsek: Sunset,
+  "clean-days": Sparkles,
+  mikveh: MoonStar,
+};
+
+const mikvehChecklistIcons: Record<string, LucideIcon> = {
+  barriers: Sparkles,
+  nails: Scissors,
+  wash: Droplets,
+  comb: Waves,
+  "final-review": CheckCircle2,
+};
+
+const dateInputClass =
+  "w-full rounded-2xl border border-white/70 bg-white/85 px-4 py-3 pl-12 text-base text-slate-800 shadow-sm outline-none transition focus:border-brand-rose focus:ring-2 focus:ring-brand-rose/35";
+
+export default function FamilyPurityApp() {
+  const tracker = useStore(trackerStore);
+  const heroRef = useRef<HTMLElement | null>(null);
+  const checklistRef = useRef<HTMLDivElement | null>(null);
+  const stepsRef = useRef<HTMLDivElement | null>(null);
+  const phaseRef = useRef<HTMLDivElement | null>(null);
+  const stageAnchorRef = useRef<HTMLDivElement | null>(null);
+  const phaseIconsAnimatedRef = useRef(false);
+  const previousPhaseRef = useRef<PhaseId | null>(null);
+  const [hasStarted, setHasStarted] = useState(false);
+
+  useEffect(() => {
+    initializeTrackerStore();
+  }, []);
+
+  useLayoutEffect(() => {
+    const hero = heroRef.current;
+
+    if (!hero) {
+      return;
+    }
+
+    const ctx = gsap.context(() => {
+      const words = gsap.utils.toArray<HTMLElement>("[data-hero-word]");
+      const lines = gsap.utils.toArray<HTMLElement>("[data-hero-line]");
+      const bloom = hero.querySelector("[data-hero-bloom]");
+      const cta = hero.querySelector("[data-hero-cta]");
+
+      gsap.set(words, { display: "inline-block", transformOrigin: "50% 100%" });
+
+      const timeline = gsap.timeline({
+        defaults: { ease: "power4.out" },
+      });
+
+      timeline.fromTo(
+        words,
+        { autoAlpha: 0, yPercent: 120, rotateX: -68, filter: "blur(14px)" },
+        { autoAlpha: 1, yPercent: 0, rotateX: 0, filter: "blur(0px)", duration: 1, stagger: 0.12 },
+      );
+
+      if (lines.length) {
+        timeline.fromTo(
+          lines,
+          { autoAlpha: 0, y: 24, filter: "blur(10px)" },
+          { autoAlpha: 1, y: 0, filter: "blur(0px)", duration: 0.72, stagger: 0.12 },
+          "-=0.46",
+        );
+      }
+
+      if (bloom) {
+        timeline.fromTo(
+          bloom,
+          { autoAlpha: 0, scale: 0.82, rotate: -8 },
+          { autoAlpha: 1, scale: 1, rotate: 0, duration: 0.9, ease: "back.out(1.4)" },
+          "-=0.42",
+        );
+      }
+
+      if (cta) {
+        timeline.fromTo(
+          cta,
+          { autoAlpha: 0, y: 18, scale: 0.96 },
+          { autoAlpha: 1, y: 0, scale: 1, duration: 0.58, ease: "power3.out" },
+          "-=0.36",
+        );
+      }
+    }, hero);
+
+    return () => ctx.revert();
+  }, []);
+
+  useEffect(() => {
+    const checklist = checklistRef.current;
+
+    if (tracker.activePhase !== "mikveh" || !checklist) {
+      return;
+    }
+
+    const ctx = gsap.context(() => {
+      const items = checklist.querySelectorAll("[data-checklist-item]");
+
+      if (items.length) {
+        gsap.fromTo(
+          items,
+          { autoAlpha: 0, y: 18 },
+          {
+            autoAlpha: 1,
+            y: 0,
+            duration: 0.42,
+            ease: "power2.out",
+            stagger: 0.08,
+          },
+        );
+      }
+    }, checklist);
+
+    return () => ctx.revert();
+  }, [tracker.activePhase]);
+
+  useEffect(() => {
+    const steps = stepsRef.current;
+    const phase = phaseRef.current;
+
+    if (!hasStarted || !steps || !phase) {
+      return;
+    }
+
+    const ctx = gsap.context(() => {
+      const timeline = gsap.timeline({
+        defaults: { duration: 0.55, ease: "power3.out" },
+      });
+
+      timeline
+        .fromTo(steps, { autoAlpha: 0, y: 28 }, { autoAlpha: 1, y: 0 })
+        .fromTo(phase, { autoAlpha: 0, y: 34 }, { autoAlpha: 1, y: 0 }, "-=0.22");
+
+      requestAnimationFrame(() => {
+        steps.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+
+    return () => ctx.revert();
+  }, [hasStarted]);
+
+  useEffect(() => {
+    const steps = stepsRef.current;
+
+    if (!hasStarted || !steps || phaseIconsAnimatedRef.current) {
+      return;
+    }
+
+    const ctx = gsap.context(() => {
+      const icons = steps.querySelectorAll("[data-phase-icon]");
+
+      if (!icons.length) {
+        return;
+      }
+
+      phaseIconsAnimatedRef.current = true;
+
+      gsap.fromTo(
+        icons,
+        { autoAlpha: 0, scale: 0.3, rotate: -140 },
+        {
+          autoAlpha: 1,
+          scale: 1,
+          rotate: 0,
+          duration: 0.75,
+          ease: "back.out(2)",
+          stagger: 0.1,
+          delay: 0.28,
+        },
+      );
+    }, steps);
+
+    return () => ctx.revert();
+  }, [hasStarted]);
+
+  useEffect(() => {
+    if (!hasStarted) {
+      return;
+    }
+
+    const previousPhase = previousPhaseRef.current;
+
+    if (previousPhase && previousPhase !== tracker.activePhase) {
+      requestAnimationFrame(() => {
+        stageAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+
+    previousPhaseRef.current = tracker.activePhase;
+  }, [hasStarted, tracker.activePhase]);
+
+  const earliestHefsekDate = tracker.periodStartDate
+    ? calculateEarliestHefsekDate(tracker.periodStartDate)
+    : "";
+  const cleanDayStart = tracker.hefsekDate ? calculateCleanDayStart(tracker.hefsekDate) : "";
+  const unlockedPhases = getUnlockedPhases(tracker);
+  const completedChecks = getCompletedChecksCount(tracker.cleanDays);
+  const mandatoryCompleted = getMandatoryCompletionCount(tracker.cleanDays);
+  const mikvehReady = canEnterMikvehPhase(tracker);
+  const preparationCompleted = tracker.mikvehChecklist.filter((item) => item.checked).length;
+  const allPreparationsComplete =
+    tracker.mikvehChecklist.length > 0 &&
+    tracker.mikvehChecklist.every((item) => item.checked);
+  const activePhase = PHASES.find((phase) => phase.id === tracker.activePhase) ?? PHASES[0];
+  const hasExistingProgress = Boolean(
+    tracker.periodStartDate ||
+      tracker.hefsekConfirmed ||
+      tracker.cleanDays.some((day) => day.morning === "done" || day.evening === "done") ||
+      tracker.mikvehChecklist.some((item) => item.checked),
+  );
+
+  const revealTracker = () => {
+    if (hasStarted) {
+      stepsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+
+    setHasStarted(true);
+  };
+
+  const renderPhase = () => {
+    switch (tracker.activePhase) {
+      case "period":
+        return (
+          <Card className="overflow-hidden" tone="rose">
+            <div className="max-w-4xl" data-stage-item>
+              <p className="text-sm font-semibold text-text-plum">שלב 1</p>
+              <h2 className="mt-2 font-heading text-3xl text-slate-900">ימי הנדודים</h2>
+              <p className="mt-4 max-w-3xl text-slate-700">
+                בחרי את יום תחילת הדימום. מכאן המערכת מחשבת את היום המוקדם ביותר
+                להפסק טהרה, לפי מינימום של חמישה ימים מתחילת הראייה.
+              </p>
+
+              <DateInputField
+                label="תאריך תחילת הדימום"
+                value={tracker.periodStartDate}
+                onChange={setPeriodStartDate}
+              />
+
+              <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                <Card className="bg-white/80" tone="default">
+                  <InfoLabel label="היום המוקדם להפסק טהרה" />
+                  <p className="mt-2 text-lg font-semibold text-slate-900">
+                    {tracker.periodStartDate
+                      ? formatDisplayDate(earliestHefsekDate)
+                      : "יופיע לאחר בחירת תאריך"}
+                  </p>
+                </Card>
+
+                <Card className="bg-white/80" tone="default">
+                  <InfoLabel label="מה קורה עכשיו?" />
+                  <p className="mt-2 text-slate-700">
+                    עד לשלב הבא נשארים בימי הנדודים. כשהדימום פוסק והיום החמישי
+                    מגיע, אפשר לעבור להפסק טהרה.
+                  </p>
+                </Card>
+              </div>
+            </div>
+
+            <div className="mt-8 flex flex-wrap gap-3" data-stage-item>
+              <Button disabled={!tracker.periodStartDate} onClick={beginHefsekPhase}>
+                מעבר להפסק טהרה
+                <ArrowLeft className="nav-icon-next h-4 w-4 shrink-0" />
+              </Button>
+            </div>
+          </Card>
+        );
+
+      case "hefsek":
+        return (
+          <Card className="overflow-hidden" tone="default">
+            <div className="grid gap-5 lg:grid-cols-[1.08fr_0.92fr]">
+              <div data-stage-item>
+                <p className="text-sm font-semibold text-text-plum">שלב 2</p>
+                <h2 className="mt-2 font-heading text-3xl text-slate-900">הפסק טהרה</h2>
+                <p className="mt-4 max-w-3xl text-slate-700">
+                  בחרי את היום שבו פסק הדימום. הבדיקה נעשית סמוך לשקיעה, ורק לאחר
+                  שהבדיקה יצאה נקייה אפשר לפתוח את שבעת הימים הנקיים.
+                </p>
+
+                <DateInputField
+                  label="יום הפסק הטהרה"
+                  min={earliestHefsekDate}
+                  value={tracker.hefsekDate}
+                  onChange={setHefsekDate}
+                />
+
+                <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                  <Card className="bg-bg-stone/85" tone="stone">
+                    <InfoLabel label="תחילת שבעה נקיים" />
+                    <p className="mt-2 font-semibold text-slate-900">
+                      {tracker.hefsekDate
+                        ? formatDisplayDate(cleanDayStart)
+                        : "יופיע לאחר בחירת תאריך"}
+                    </p>
+                  </Card>
+                  <Card className="bg-status-sage/45" tone="sage">
+                    <InfoLabel label="ליל הטבילה המחושב" />
+                    <p className="mt-2 font-semibold text-slate-900">
+                      {tracker.hefsekDate
+                        ? `${formatDisplayDate(tracker.mikvehNightDate)} אחרי צאת הכוכבים`
+                        : "יופיע לאחר בחירת תאריך"}
+                    </p>
+                  </Card>
+                </div>
+              </div>
+
+              <div className="space-y-4" data-stage-item>
+                <Card tone="stone">
+                  <div className="inline-flex items-center gap-2">
+                    <Info className="h-4 w-4 text-text-plum" />
+                    <h3 className="font-heading text-lg text-slate-900">תזכורת קצרה</h3>
+                  </div>
+                  <ul className="mt-3 space-y-2 text-sm text-slate-700">
+                    <li>לפני הבדיקה יש לרחוץ את אזור הבדיקה.</li>
+                    <li>הבדיקה נעשית עם בד לבן נקי, סמוך לשקיעה.</li>
+                    <li>אם יש ספק במראה שעל העד, כדאי להתייעץ עם רב מלווה.</li>
+                  </ul>
+                </Card>
+
+                <button
+                  aria-checked={tracker.hefsekConfirmed}
+                  className={[
+                    "flex w-full items-center justify-between rounded-[1.75rem] border px-5 py-4 text-right transition duration-300",
+                    tracker.hefsekConfirmed
+                      ? "border-status-olive bg-status-sage/65"
+                      : "attention-pulse border-brand-rose/60 bg-white/85 shadow-blush hover:bg-white",
+                  ].join(" ")}
+                  role="switch"
+                  type="button"
+                  onClick={() => setHefsekConfirmed(!tracker.hefsekConfirmed)}
+                >
+                  <div>
+                    <p className="font-semibold text-slate-900">הבדיקה הצליחה</p>
+                    <p className="mt-1 text-sm text-slate-600">
+                      סמני לאחר שבדיקת ההפסק יצאה נקייה.
+                    </p>
+                  </div>
+                  <span
+                    className={[
+                      "rounded-full px-4 py-2 text-sm font-semibold",
+                      tracker.hefsekConfirmed
+                        ? "bg-white text-text-plum"
+                        : "bg-bg-stone text-slate-600",
+                    ].join(" ")}
+                  >
+                    {tracker.hefsekConfirmed ? "סומן בהצלחה" : "טרם סומן"}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-8 flex flex-wrap gap-3" data-stage-item>
+              <Button onClick={() => setActivePhase("period")} variant="ghost">
+                <ArrowRight className="nav-icon-back h-4 w-4 shrink-0" />
+                חזרה לימי הנדודים
+              </Button>
+              <Button
+                disabled={!tracker.hefsekConfirmed}
+                onClick={() => setActivePhase("clean-days")}
+              >
+                פתיחת שבעה נקיים
+                <ArrowLeft className="nav-icon-next h-4 w-4 shrink-0" />
+              </Button>
+            </div>
+          </Card>
+        );
+
+      case "clean-days":
+        return (
+          <Card className="overflow-hidden" tone="default">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div data-stage-item>
+                <p className="text-sm font-semibold text-text-plum">שלב 3</p>
+                <h2 className="mt-2 font-heading text-3xl text-slate-900">שבעה נקיים</h2>
+                <p className="mt-3 max-w-3xl text-slate-700">
+                  סמני בדיקות בוקר וערב לאורך שבעה ימים. ימים 1, 3 ו־7 מודגשים
+                  כימי חובה מינימליים.
+                </p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3" data-stage-item>
+                <Card className="min-w-[10rem] bg-bg-stone/85" tone="stone">
+                  <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
+                    בדיקות שסומנו
+                  </p>
+                  <p className="mt-2 text-2xl font-semibold text-slate-900">
+                    {completedChecks}/14
+                  </p>
+                </Card>
+                <Card className="min-w-[10rem] bg-status-sage/45" tone="sage">
+                  <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
+                    ימי חובה
+                  </p>
+                  <p className="mt-2 text-2xl font-semibold text-slate-900">
+                    {mandatoryCompleted}/3
+                  </p>
+                </Card>
+                <Card className="min-w-[10rem] bg-brand-blush/40" tone="rose">
+                  <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
+                    ליל טבילה
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-slate-900">
+                    {formatDisplayDate(tracker.mikvehNightDate)}
+                  </p>
+                </Card>
+              </div>
+            </div>
+
+            <div className="mt-6 grid gap-4 xl:grid-cols-2" data-stage-item>
+              {tracker.cleanDays.map((day) => (
+                <Card
+                  key={day.dayNumber}
+                  className={[
+                    "border-white/75 bg-white/75",
+                    day.mandatory ? "ring-1 ring-brand-rose/35" : "",
+                  ].join(" ")}
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-lg font-semibold text-slate-900">יום {day.dayNumber}</p>
+                      <p className="text-sm text-slate-600">{formatDisplayDate(day.date)}</p>
+                    </div>
+                    {day.mandatory ? (
+                      <span className="rounded-full bg-brand-blush px-3 py-1 text-sm font-semibold text-text-plum">
+                        חובה מינימלית
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <CheckSlotControl
+                      label="בדיקת בוקר"
+                      slot="morning"
+                      status={day.morning}
+                      onBlood={() => setCleanDayStatus(day.dayNumber, "morning", "blood")}
+                      onToggle={() =>
+                        setCleanDayStatus(
+                          day.dayNumber,
+                          "morning",
+                          day.morning === "done" ? "pending" : "done",
+                        )
+                      }
+                    />
+                    <CheckSlotControl
+                      label="בדיקת ערב"
+                      slot="evening"
+                      status={day.evening}
+                      onBlood={() => setCleanDayStatus(day.dayNumber, "evening", "blood")}
+                      onToggle={() =>
+                        setCleanDayStatus(
+                          day.dayNumber,
+                          "evening",
+                          day.evening === "done" ? "pending" : "done",
+                        )
+                      }
+                    />
+                  </div>
+
+                  {day.mandatory ? (
+                    <p className="mt-4 text-sm text-slate-600">
+                      מצב יום חובה:{" "}
+                      <span className="font-semibold text-slate-900">
+                        {dayHasMandatoryCompletion(day) ? "הושלם" : "נדרשת לפחות בדיקה אחת"}
+                      </span>
+                    </p>
+                  ) : null}
+                </Card>
+              ))}
+            </div>
+
+            <div
+              className="mt-6 rounded-3xl border border-brand-rose/35 bg-brand-blush/35 p-4 text-sm text-slate-700"
+              data-stage-item
+            >
+              סימון &quot;מראה דמי&quot; מאפס את הספירה לצורך זהירות ומחזיר את המעקב
+              לתחילת מחזור חדש. בכל ספק הלכתי, מומלץ להתייעץ עם רב מלווה.
+            </div>
+
+            <div className="mt-8 flex flex-wrap gap-3" data-stage-item>
+              <Button onClick={() => setActivePhase("hefsek")} variant="ghost">
+                <ArrowRight className="nav-icon-back h-4 w-4 shrink-0" />
+                חזרה להפסק טהרה
+              </Button>
+              <Button disabled={!mikvehReady} onClick={moveToMikvehPhase}>
+                מעבר לשלב הטבילה
+                <ArrowLeft className="nav-icon-next h-4 w-4 shrink-0" />
+              </Button>
+            </div>
+          </Card>
+        );
+
+      case "mikveh":
+        return (
+          <Card className="overflow-hidden" tone="sage">
+            <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+              <div data-stage-item>
+                <p className="text-sm font-semibold text-text-plum">שלב 4</p>
+                <h2 className="mt-2 font-heading text-3xl text-slate-900">טבילה</h2>
+                <p className="mt-4 max-w-2xl text-slate-700">
+                  ליל הטבילה חל שבוע לאחר הפסק הטהרה, באותו יום בשבוע, והטבילה
+                  עצמה היא בלילה אחרי צאת הכוכבים.
+                </p>
+
+                <div className="mt-6 rounded-[2rem] border border-white/80 bg-white/75 p-5">
+                  <InfoLabel label="ליל הטבילה" />
+                  <p className="mt-2 text-2xl font-semibold text-slate-900">
+                    {formatDisplayDate(tracker.mikvehNightDate)}
+                  </p>
+                  <p className="mt-2 text-sm text-slate-600">הגעה לטבילה: אחרי צאת הכוכבים.</p>
+                </div>
+
+                <div className="mt-4 rounded-[2rem] border border-white/80 bg-white/75 p-5">
+                  <InfoLabel label="התקדמות בהכנות" />
+                  <p className="mt-2 text-2xl font-semibold text-slate-900">
+                    {preparationCompleted}/{tracker.mikvehChecklist.length}
+                  </p>
+                </div>
+              </div>
+
+              <div ref={checklistRef} className="space-y-3" data-stage-item>
+                {tracker.mikvehChecklist.map((item) => {
+                  const Icon = mikvehChecklistIcons[item.id] ?? Sparkles;
+
+                  return (
+                    <button
+                      key={item.id}
+                      className={[
+                        "w-full rounded-[1.75rem] border px-5 py-4 text-right transition",
+                        item.checked
+                          ? "border-status-olive bg-white/88"
+                          : "border-white/75 bg-white/70 hover:bg-white/88",
+                      ].join(" ")}
+                      data-checklist-item
+                      type="button"
+                      onClick={() => toggleMikvehChecklistItem(item.id)}
+                    >
+                      <div className="flex items-start gap-4">
+                        <div
+                          className={[
+                            "mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl",
+                            item.checked ? "bg-status-sage text-slate-900" : "bg-bg-stone text-text-plum",
+                          ].join(" ")}
+                        >
+                          <Icon className="h-5 w-5" />
+                        </div>
+
+                        <div className="flex-1">
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                              <p className="font-semibold text-slate-900">{item.label}</p>
+                              <p className="mt-1 text-sm text-slate-600">{item.description}</p>
+                            </div>
+                            <span
+                              className={[
+                                "inline-flex h-8 min-w-8 items-center justify-center rounded-full px-3 text-sm font-semibold",
+                                item.checked
+                                  ? "bg-status-sage text-slate-900"
+                                  : "bg-bg-stone text-slate-500",
+                              ].join(" ")}
+                            >
+                              {item.checked ? "בוצע" : "לביצוע"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {allPreparationsComplete ? (
+              <div
+                className="mt-6 rounded-3xl border border-status-olive/70 bg-white/70 p-4 text-slate-800"
+                data-stage-item
+              >
+                כל ההכנות סומנו. מומלץ לבצע סקירה אחרונה סמוך ככל האפשר לטבילה
+                ולהמשיך בנחת.
+              </div>
+            ) : null}
+
+            <div className="mt-8 flex flex-wrap gap-3" data-stage-item>
+              <Button onClick={() => setActivePhase("clean-days")} variant="ghost">
+                <ArrowRight className="nav-icon-back h-4 w-4 shrink-0" />
+                חזרה לשבעה נקיים
+              </Button>
+            </div>
+          </Card>
+        );
+    }
+  };
+
+  return (
+    <section className="grid gap-8">
+      <section
+        ref={heroRef}
+        className="paper-shell overflow-hidden rounded-[2.75rem] border border-white/70 px-6 py-10 shadow-soft sm:px-8 sm:py-12"
+      >
+        <div className="mx-auto flex min-h-[68vh] max-w-4xl flex-col items-center justify-center text-center">
+          <p className="cover-title text-5xl text-text-plum sm:text-7xl">
+            <span data-hero-word>טהרת</span>{" "}
+            <span data-hero-word>המשפחה</span>
+          </p>
+          <p data-hero-line className="mt-3 text-lg text-text-plum/85 sm:text-2xl">
+            מדריך מעשי לציבור הכללי
+          </p>
+          <p data-hero-line className="cover-script mt-3 text-4xl text-text-plum sm:text-6xl">
+            פשוט להבין
+          </p>
+
+          <div data-hero-bloom>
+            <CoverBloom className="hero-bloom mt-6 w-[10.5rem] sm:w-[12rem]" />
+          </div>
+
+          <Button className="mt-7" data-hero-cta onClick={revealTracker}>
+            {hasExistingProgress ? "המשך תהליך" : "התחל תהליך"}
+            <ArrowDown className="h-4 w-4" />
+          </Button>
+        </div>
+      </section>
+
+      {hasStarted ? (
+        <>
+          <div ref={stepsRef} style={{ opacity: 0 }}>
+            <Card className="overflow-hidden" tone="stone">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-text-plum">אבני הדרך</p>
+                  <h2 className="mt-2 font-heading text-2xl text-slate-900">
+                    {activePhase.label}
+                  </h2>
+                  <p className="mt-2 max-w-2xl text-slate-700">{activePhase.summary}</p>
+                </div>
+
+                <Button onClick={restartTracker} size="sm" variant="ghost">
+                  <RefreshCcw className="reset-spin h-4 w-4" />
+                  איפוס תהליך
+                </Button>
+              </div>
+
+              <div className="mt-6 flex flex-wrap gap-4">
+                {PHASES.map((phase) => {
+                  const Icon = phaseIcons[phase.id];
+                  const isUnlocked = unlockedPhases.includes(phase.id);
+                  const isActive = tracker.activePhase === phase.id;
+
+                  return (
+                    <button
+                      key={phase.id}
+                      className={[
+                        "flex min-w-[12rem] items-center gap-3 rounded-[1.6rem] border px-4 py-3 text-right transition",
+                        isActive
+                          ? "border-brand-rose bg-brand-blush/70"
+                          : "border-white/75 bg-white/70",
+                        isUnlocked ? "hover:bg-white/90" : "cursor-not-allowed opacity-50",
+                      ].join(" ")}
+                      disabled={!isUnlocked}
+                      type="button"
+                      onClick={() => setActivePhase(phase.id)}
+                    >
+                      <div className="rounded-2xl bg-white/80 p-2.5" data-phase-icon>
+                        <Icon className="h-4 w-4 text-text-plum" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                          {phase.eyebrow}
+                        </p>
+                        <p className="font-semibold text-slate-900">{phase.label}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </Card>
+          </div>
+
+          <div ref={phaseRef} className="grid gap-6" style={{ opacity: 0 }}>
+            {tracker.warningMessage ? (
+              <Card className="border-brand-rose/40" tone="rose">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-2xl bg-white/75 p-3">
+                      <AlertTriangle className="h-5 w-5 text-text-plum" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-slate-900">הודעה רגישה</p>
+                      <p className="mt-1 text-sm text-slate-700">{tracker.warningMessage}</p>
+                    </div>
+                  </div>
+                  <Button onClick={dismissWarning} size="sm" variant="ghost">
+                    סגירה
+                  </Button>
+                </div>
+              </Card>
+            ) : null}
+
+            <div ref={stageAnchorRef}>
+              <StageContainer stageKey={tracker.activePhase}>{renderPhase()}</StageContainer>
+            </div>
+          </div>
+        </>
+      ) : null}
+    </section>
+  );
+}
+
+interface CheckSlotControlProps {
+  label: string;
+  slot: CheckSlot;
+  status: CheckStatus;
+  onBlood: () => void;
+  onToggle: () => void;
+}
+
+interface DateInputFieldProps {
+  label: string;
+  min?: string;
+  onChange: (value: string) => void;
+  value: string;
+}
+
+function DateInputField({ label, min, onChange, value }: DateInputFieldProps) {
+  const hasValue = Boolean(value);
+
+  return (
+    <label className="mt-6 block max-w-xl text-sm font-semibold text-slate-700">
+      {label}
+      <div className="relative mt-3">
+        <input
+          className={dateInputClass}
+          dir="ltr"
+          min={min}
+          type="date"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+        />
+        <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center">
+          {hasValue ? (
+            <span className="date-status-success inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+              <Check className="h-4 w-4" />
+            </span>
+          ) : (
+            <span className="date-status-prompt inline-flex h-7 w-7 items-center justify-center rounded-full bg-brand-blush/70 text-text-plum">
+              <Hand className="h-4 w-4" />
+            </span>
+          )}
+        </span>
+      </div>
+    </label>
+  );
+}
+
+function InfoLabel({ label }: { label: string }) {
+  return (
+    <div className="inline-flex items-center gap-2 text-sm text-slate-600">
+      <Info className="h-4 w-4 shrink-0 text-text-plum" />
+      <span>{label}</span>
+    </div>
+  );
+}
+
+function CheckSlotControl({
+  label,
+  slot,
+  status,
+  onBlood,
+  onToggle,
+}: CheckSlotControlProps) {
+  return (
+    <div className="rounded-[1.5rem] border border-white/70 bg-bg-stone/60 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="font-semibold text-slate-900">{label}</p>
+          <p className="text-xs uppercase tracking-[0.14em] text-slate-500">
+            {slot === "morning" ? "AM" : "PM"}
+          </p>
+        </div>
+
+        <span
+          className={[
+            "rounded-full px-3 py-1 text-sm font-semibold",
+            status === "done"
+              ? "bg-status-sage text-slate-800"
+              : "bg-white/85 text-slate-500",
+          ].join(" ")}
+        >
+          {status === "done" ? "סומן תקין" : "טרם סומן"}
+        </span>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button onClick={onToggle} size="sm" variant={status === "done" ? "success" : "secondary"}>
+          <CheckCircle2 className="h-4 w-4" />
+          {status === "done" ? "בטל סימון" : "סמן כנקי"}
+        </Button>
+        <Button onClick={onBlood} size="sm" variant="danger">
+          מראה דמי
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function CoverBloom({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 180 220"
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M88 208C92 186 95 171 96 152C98 125 92 103 89 82"
+        stroke="#B9906D"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <path
+        d="M95 154C106 140 118 131 132 126"
+        stroke="#C9A57F"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <path
+        d="M92 146C80 134 68 128 55 126"
+        stroke="#C9A57F"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <ellipse cx="90" cy="77" rx="22" ry="28" fill="#E8A8B7" />
+      <ellipse cx="65" cy="88" rx="19" ry="23" fill="#F1B7C5" />
+      <ellipse cx="113" cy="90" rx="19" ry="23" fill="#F4BBC8" />
+      <ellipse cx="81" cy="103" rx="19" ry="22" fill="#DFA1B0" />
+      <ellipse cx="104" cy="106" rx="17" ry="20" fill="#E7A9B8" />
+      <circle cx="92" cy="95" r="9" fill="#B97D88" />
+      <ellipse
+        cx="49"
+        cy="136"
+        rx="14"
+        ry="6"
+        transform="rotate(32 49 136)"
+        fill="#CDB092"
+      />
+      <ellipse
+        cx="65"
+        cy="150"
+        rx="14"
+        ry="6"
+        transform="rotate(-18 65 150)"
+        fill="#D7B89A"
+      />
+      <ellipse
+        cx="125"
+        cy="142"
+        rx="16"
+        ry="7"
+        transform="rotate(-28 125 142)"
+        fill="#D3B295"
+      />
+      <ellipse
+        cx="140"
+        cy="127"
+        rx="18"
+        ry="8"
+        transform="rotate(20 140 127)"
+        fill="#CFAC8C"
+      />
+      <path
+        d="M136 53L139 60L146 63L139 66L136 73L133 66L126 63L133 60L136 53Z"
+        fill="#D9B293"
+      />
+      <circle cx="150" cy="71" r="3" fill="#F1B6C4" />
+      <circle cx="41" cy="82" r="2.5" fill="#E9AFBD" />
+      <circle cx="29" cy="132" r="2.5" fill="#D4B095" />
+    </svg>
+  );
+}
