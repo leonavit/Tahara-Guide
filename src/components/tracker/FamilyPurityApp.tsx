@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowDown,
+  BookOpenText,
   Check,
   CheckCircle2,
   CircleHelp,
@@ -12,14 +13,16 @@ import {
   Hand,
   Info,
   MoonStar,
+  Phone,
   RefreshCcw,
   Scissors,
   Sparkles,
   Sunset,
   Waves,
+  X,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import {
   PHASES,
   calculateCleanDayStart,
@@ -75,15 +78,134 @@ const dateFieldDisplayClass =
 
 const dateInputClass = "native-date-input absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0";
 
+const CONTACTS = {
+  rabbi: {
+    cta: "פרטי הרב",
+    name: "הרב אליעד בן-דוד",
+    phone: "050-5883671",
+    role: "רב משיב בטהרת המשפחה",
+  },
+  rebbetzin: {
+    cta: "פרטי הרבנית",
+    name: "ברכה בן-דוד",
+    phone: "052-7203781",
+    role: "מילדת, בודקת טהרה",
+  },
+} as const;
+
+const INTRO_PARAGRAPHS = [
+  "הקשר שבין איש לאשתו הוא קשר נשמתי עמוק, קשר המבוסס מבריאת אדם וחוה. שלמות האדם מתממשת כאשר האיש והאישה מתאחדים לגוף אחד ולנשמה אחת.",
+  "ברית הזוגיות מבקשת טיפוח מתמיד בשני המישורים, הקשר הרוחני והקשר הגופני. שמירת טהרת המשפחה מסייעת לבניית חיבורים אלו בסבב מעגלי של צמיחה.",
+  "תחילה מתחזק הקשר הרוחני, ועל גביו נבנה ומתחדש גם הקשר הגופני, ושוב יש עליה מחודשת למדרגה גבוהה יותר.",
+] as const;
+
+const INTRO_NOTES = [
+  "בחלק הראשון מופיעות ההלכות המינימליות. להרחבת ההלכות וכן לכללי 'עשי ואל תעשי' יש לעיין בחלק ההלכות.",
+  "מומלץ לפנות לרב או רבנית שגרים בקרבתכם לליווי והכוונה רציפים. עצה זו תמנע טעויות ועוגמת נפש.",
+] as const;
+
+const LAW_SECTIONS = [
+  {
+    title: "ימי הנדודים",
+    body: [
+      "עם תחילת דימום הווסת מתחילים ימי הנדודים. תקופה זו נמשכת כל ימי הדימום, ולכל הפחות חמישה ימים.",
+      "בימים אלו בני הזוג אסורים בקרבה גופנית ובמגע עד לאחר הטבילה במקוה. מטרת התקופה היא לבנות את הקשר הרוחני והנפשי בין בני הזוג.",
+      "אפילו מראה דם חד פעמי עלול לאסור בקרבה גופנית עד לאחר תהליך הטהרה. אם יש ספק לגבי מקור הדם, כתם, או הפרשה - יש לנהוג איסור מתוך ספק ולפנות לרב המלווה.",
+    ],
+    bullets: [
+      "דם על פד, תחתון, בגד צמוד, מגבת, מיטה או גוף אינו תמיד מטמא. יש משתנים רבים ולכן חשוב להתייעץ עם הרב.",
+      "דם על עד בדיקה אינו נידון כמו כתם רגיל, ויש לברר לגביו בנפרד.",
+      "בהפרשות שאינן דמיות אין משמעות הלכתית, אך בכל צבע גבולי מומלץ לשאול.",
+    ],
+  },
+  {
+    title: "ריחוק שבונה קרבה",
+    body: [
+      "בימים אלו אסורים האיש והאישה בכל מגע, אפילו מגע שאינו של חיבה. נמנעים גם משינה במיטה אחת ומהושטה מיד ליד.",
+      "דווקא הריחוק מלמד את בני הזוג לבנות את הקשר על שיחה, קרבה נפשית, תשומת לב והתחדשות פנימית.",
+    ],
+  },
+  {
+    title: "עשי, אל תעשי והמלצות",
+    bullets: [
+      "לאחר ראיית כתם בימי טהרה אין לבדוק מיד בעד בדיקה. יש להמתין ולהתייעץ עם הרב מתי נכון לבצע בדיקה.",
+      "מומלץ לאחר שירותים להמתין מעט לפני הניגוב ולא להביט על נייר הטואלט. עדיף להשתמש בנייר צבעוני שאינו אדום.",
+      "לאחר קיום יחסים מומלץ להשתמש במגבת כהה, ובזמן חשש מכתמים ללבוש בגד תחתון צבעוני בהיר.",
+      "לאחר ראיית כתם דם מומלץ לא לקיים יחסים במשך 24 שעות, כדי לוודא שההפרשה נקייה ולא יימצא דם בזמן קיום יחסים.",
+      "התייעצות מוקדמת עם הרב המלווה תמנע עוגמת נפש והרבה טעויות.",
+    ],
+  },
+  {
+    title: "בדיקת הפסק טהרה",
+    body: [
+      "מטרת הבדיקה היא לוודא שהדימום הסתיים כדי שאפשר יהיה להתחיל לספור שבעה ימים נקיים. בד הבדיקה צריך לצאת נקי מדם.",
+      "הבדיקה נעשית ביום שבו פסק הדימום, אך לא פחות מחמישה ימים מתחילת הראייה, בשעה הסמוכה לפני שקיעת השמש.",
+      "לפני הבדיקה יש לרחוץ את אזור הבדיקה, ואם אפשר - את כל הגוף. את הבדיקה עושים עם בד לבן נקי, על ידי כריכת העד סביב האצבע ובדיקה פנימית יסודית.",
+      "אם הבדיקה לא יצאה נקייה ניתן לחזור עליה עד השקיעה. מומלץ להמתין מעט בין בדיקה לבדיקה כדי לא לפצוע את המקום.",
+    ],
+    bullets: [
+      "מומלץ להקדים בדיקה אחת כבר מבוקר היום החמישי או במשך היום עם סיום הדימום, כדי שאם תישכח הבדיקה לפני השקיעה אפשר יהיה להסתמך על הבדיקה המוקדמת.",
+      "אין להכריע לבד בצבעי ההפרשה שעל העד. מומלץ לשאול את הרב המלווה בכל ספק.",
+    ],
+  },
+  {
+    title: "שבעה נקיים",
+    body: [
+      "למחרת היום בו נעשה הפסק טהרה מתחילה ספירת שבעה ימים נקיים, רצופים וללא דימום.",
+      "בכל יום משבעת הימים טוב לבצע שתי בדיקות: אחת בבוקר ואחת לפני השקיעה. אם אי אפשר - עדיפות שנייה היא בדיקה אחת בכל יום.",
+      "המינימום ההלכתי הוא בדיקה ביום הראשון, בדיקה ביום השלישי ובדיקה ביום השביעי לפני שקיעה. אם היו פחות בדיקות - יש לשאול את הרב.",
+      "אם במהלך שבעת הימים נמצא דם שיצא מהרחם על גבי העד או כתם גדול שמטמא - יש להתחיל את הספירה מחדש.",
+    ],
+    bullets: [
+      "אין לסתור את הספירה ולהתחיל מחדש בלי להתייעץ עם הרב המלווה.",
+      "לא כל צבע הפרשה שאינו שקוף מטמא. יש צבעים גבוליים שאינם אדומים והם טהורים.",
+    ],
+  },
+  {
+    title: "הכנות לטבילה",
+    body: [
+      "הטבילה היא השלב האחרון של תהליך הטהרה, ויש לעשותה בנחת ובשמחה. יום הטבילה חל באותו יום בשבוע שבו בוצע שבוע לפני כן הפסק הטהרה.",
+      "כדי שהטבילה תהיה כשרה יש להסיר מהגוף כל חציצה: לכלוך, איפור, צבע, שיער שמסירים בדרך כלל, תכשיטים, עדשות מגע, לכלוך תחת הציפורניים וכדומה.",
+      "סדר ההכנות כולל שלושה חלקים: הכנות, שטיפה יסודית, וסקירת הגוף. אפשר לבצע את ההכנות בבית או במקוה, העיקר שהכול ייעשה במתינות וביסודיות.",
+      "את השטיפה והסקירה יש לעשות סמוך ככל האפשר לטבילה, לאחר צאת הכוכבים בסוף היום השביעי.",
+    ],
+    bullets: [
+      "יש לסרק את השיער, לשטוף היטב את הגוף, לבדוק קפלים, טבור, אוזניים, פה, שיניים, ואף לשים לב לקשרים בשיער.",
+      "בליל שבת, במוצאי שבת, או לאחר ימי חג - יש דגשים מיוחדים, ובמקרים כאלה מומלץ להתייעץ עם הרב המלווה.",
+      "בכל שאלה לגבי חציצה, גבס, תחבושות, תפרים וכדומה - יש לפנות לרב המלווה.",
+    ],
+  },
+  {
+    title: "דרך הטבילה ואחריה",
+    body: [
+      "במקוה נמצאת בלנית שתפקידה לסייע בהכנות ובטבילה עצמה. לאחר סיום ההכנות טובלים שתי טבילות על פי הסדר הנהוג במקוה.",
+      "יש להכניס את כל הגוף למים באופן שהאיברים רפויים, ולהקפיד שכל שערות הראש יהיו בתוך המים.",
+      "הטבילה מסמנת את הסיום והמעבר בין תקופת ההכנה והעבודה הרוחנית לבין חידוש וקידוש הקשר הגופני בין בני הזוג.",
+    ],
+  },
+  {
+    title: "ימי הטהרה ועונות הפרישה",
+    body: [
+      "לאחר הטבילה מתחילה תקופה של ימי טהרה, שבה הקשר הגופני בין בני הזוג שב ונבנה מתוך חיבור ואהבה אמיתית.",
+      "לקראת סוף ימי הטהרה ישנם שלושה תאריכים בהם חוששים לווסת: יום החודש, עונה בינונית, וטווח הפלגה. בתאריכים אלו אסורים בקרבה שעשויה להביא לקיום יחסים, והאישה צריכה לבדוק את עצמה בתחילת היום ובסופו.",
+      "את שלושת התאריכים מחשבים לפי יום ועונת הווסת האחרון. אם יש ספק בחישוב או בהתנהלות - כדאי להיעזר באפליקציה ולפנות לרב.",
+    ],
+  },
+] as const;
+
+type OverlaySheetKey = "intro" | "laws";
+
 export default function FamilyPurityApp() {
   const tracker = useStore(trackerStore);
   const heroRef = useRef<HTMLElement | null>(null);
+  const hefsekAttentionRef = useRef<HTMLButtonElement | null>(null);
   const checklistRef = useRef<HTMLDivElement | null>(null);
   const stepsRef = useRef<HTMLDivElement | null>(null);
   const phaseRef = useRef<HTMLDivElement | null>(null);
   const stageAnchorRef = useRef<HTMLDivElement | null>(null);
   const phaseIconsAnimatedRef = useRef(false);
   const previousPhaseRef = useRef<PhaseId | null>(null);
+  const [activeOverlay, setActiveOverlay] = useState<OverlaySheetKey | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
 
   useEffect(() => {
@@ -101,7 +223,7 @@ export default function FamilyPurityApp() {
       const words = gsap.utils.toArray<HTMLElement>("[data-hero-word]");
       const lines = gsap.utils.toArray<HTMLElement>("[data-hero-line]");
       const bloom = hero.querySelector("[data-hero-bloom]");
-      const cta = hero.querySelector("[data-hero-cta]");
+      const ctas = gsap.utils.toArray<HTMLElement>("[data-hero-cta]");
 
       gsap.set(words, { display: "inline-block", transformOrigin: "50% 100%" });
 
@@ -133,11 +255,11 @@ export default function FamilyPurityApp() {
         );
       }
 
-      if (cta) {
+      if (ctas.length) {
         timeline.fromTo(
-          cta,
+          ctas,
           { autoAlpha: 0, y: 18, scale: 0.96 },
-          { autoAlpha: 1, y: 0, scale: 1, duration: 0.58, ease: "power3.out" },
+          { autoAlpha: 1, y: 0, scale: 1, duration: 0.58, ease: "power3.out", stagger: 0.08 },
           "-=0.36",
         );
       }
@@ -173,6 +295,39 @@ export default function FamilyPurityApp() {
 
     return () => ctx.revert();
   }, [tracker.activePhase]);
+
+  useEffect(() => {
+    const button = hefsekAttentionRef.current;
+
+    if (tracker.activePhase !== "hefsek" || tracker.hefsekConfirmed || !button) {
+      return;
+    }
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+
+    const ctx = gsap.context(() => {
+      const outlines = button.querySelectorAll<SVGRectElement>("[data-attention-outline]");
+
+      if (!outlines.length) {
+        return;
+      }
+
+      gsap.set(outlines, {
+        attr: { "stroke-dasharray": "84 316", "stroke-dashoffset": "0" },
+      });
+
+      gsap.to(outlines, {
+        attr: { "stroke-dashoffset": "-400" },
+        duration: 4.8,
+        ease: "none",
+        repeat: -1,
+      });
+    }, button);
+
+    return () => ctx.revert();
+  }, [tracker.activePhase, tracker.hefsekConfirmed]);
 
   useEffect(() => {
     const steps = stepsRef.current;
@@ -248,6 +403,22 @@ export default function FamilyPurityApp() {
 
     previousPhaseRef.current = tracker.activePhase;
   }, [hasStarted, tracker.activePhase]);
+
+  useEffect(() => {
+    if (!activeOverlay) {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setActiveOverlay(null);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [activeOverlay]);
 
   const earliestHefsekDate = tracker.periodStartDate
     ? calculateEarliestHefsekDate(tracker.periodStartDate)
@@ -380,18 +551,20 @@ export default function FamilyPurityApp() {
                 </Card>
 
                 <button
+                  ref={hefsekAttentionRef}
                   aria-checked={tracker.hefsekConfirmed}
                   className={[
                     "relative flex w-full items-start gap-4 rounded-[1.75rem] border-2 px-5 py-4 text-right transition duration-300",
                     tracker.hefsekConfirmed
                       ? "border-status-olive bg-status-sage/65"
-                      : "attention-pulse attention-ring border-brand-rose/75 bg-white/88 shadow-blush hover:bg-white",
+                      : "attention-pulse border-brand-rose/75 bg-white/88 shadow-blush hover:bg-white",
                   ].join(" ")}
                   role="switch"
                   type="button"
                   onClick={() => setHefsekConfirmed(!tracker.hefsekConfirmed)}
                 >
-                  <div className="flex items-start gap-3">
+                  {!tracker.hefsekConfirmed ? <AttentionBorder /> : null}
+                  <div className="relative z-10 flex items-start gap-3">
                     <StatusCheckbox checked={tracker.hefsekConfirmed} className="mt-0.5" />
                     <div>
                       <p className="font-semibold text-slate-900">סמני שהבדיקה הצליחה</p>
@@ -594,7 +767,7 @@ export default function FamilyPurityApp() {
                         <div
                           className={[
                             "mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl",
-                            item.checked ? "bg-status-sage text-slate-900" : "bg-bg-stone text-text-plum",
+                            item.checked ? "bg-[#e0efea] text-slate-900" : "bg-[#e0efea] text-text-plum",
                           ].join(" ")}
                         >
                           <Icon className="h-5 w-5" />
@@ -624,8 +797,13 @@ export default function FamilyPurityApp() {
                 data-stage-item
               >
                 <div className="flex flex-col items-center text-center">
-                  <PrayerHandsIllustration className="prayer-illustration h-28 w-28 text-text-plum" />
-                  <h3 className="mt-3 font-heading text-3xl text-text-plum">בעזרת השם נעשה ונצליח</h3>
+                  <span aria-hidden="true" className="prayer-illustration text-6xl leading-none">
+                    🙏
+                  </span>
+                  <h3 className="mt-3 max-w-lg font-heading text-3xl leading-snug text-text-plum">
+                    כֻּלָּךְ יָפָה רַעְיָתִי וּמוּם אֵין בָּךְ
+                    <span className="mt-1 block text-2xl">(שיר השירים ד&apos;, ז&apos;)</span>
+                  </h3>
                   <p className="mt-2 max-w-md text-sm text-slate-700">
                     כל ההכנות סומנו. מומלץ לבצע סקירה אחרונה סמוך ככל האפשר לטבילה
                     ולהמשיך בנחת.
@@ -667,10 +845,20 @@ export default function FamilyPurityApp() {
             <CoverBloom className="hero-bloom mt-6 w-[10.5rem] sm:w-[12rem]" />
           </div>
 
-          <Button className="mt-7" data-hero-cta onClick={revealTracker}>
-            {hasExistingProgress ? "המשך תהליך" : "התחל תהליך"}
-            <ArrowDown className="h-4 w-4" />
-          </Button>
+          <div className="mt-7 flex w-full max-w-3xl flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center">
+            <Button data-hero-cta onClick={revealTracker}>
+              {hasExistingProgress ? "המשך תהליך" : "התחל תהליך"}
+              <ArrowDown className="cta-arrow-bob h-4 w-4" />
+            </Button>
+            <Button data-hero-cta variant="ghost" onClick={() => setActiveOverlay("intro")}>
+              הקדמה ויצירת קשר
+              <Phone className="h-4 w-4" />
+            </Button>
+            <Button data-hero-cta variant="ghost" onClick={() => setActiveOverlay("laws")}>
+              הלכות
+              <BookOpenText className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </section>
 
@@ -758,6 +946,85 @@ export default function FamilyPurityApp() {
           </div>
         </>
       ) : null}
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <ContactCard
+          actionLabel={CONTACTS.rabbi.cta}
+          name={CONTACTS.rabbi.name}
+          phone={CONTACTS.rabbi.phone}
+          role={CONTACTS.rabbi.role}
+        />
+        <ContactCard
+          actionLabel={CONTACTS.rebbetzin.cta}
+          name={CONTACTS.rebbetzin.name}
+          phone={CONTACTS.rebbetzin.phone}
+          role={CONTACTS.rebbetzin.role}
+        />
+      </div>
+
+      <OverlaySheet
+        title={activeOverlay === "laws" ? "הלכות" : "הקדמה בקטנה"}
+        open={activeOverlay !== null}
+        onClose={() => setActiveOverlay(null)}
+      >
+        {activeOverlay === "intro" ? (
+          <div className="space-y-5">
+            <div className="space-y-3 text-right text-slate-700">
+              {INTRO_PARAGRAPHS.map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
+              ))}
+            </div>
+            <div className="rounded-[1.6rem] bg-brand-blush/35 p-4">
+              <p className="font-semibold text-slate-900">חשוב לדעת</p>
+              <ul className="mt-3 space-y-2 text-sm text-slate-700">
+                {INTRO_NOTES.map((note) => (
+                  <li key={note} className="flex items-start gap-2">
+                    <span className="mt-1 text-text-plum">•</span>
+                    <span>{note}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <ContactCard
+                actionLabel={CONTACTS.rabbi.cta}
+                name={CONTACTS.rabbi.name}
+                phone={CONTACTS.rabbi.phone}
+                role={CONTACTS.rabbi.role}
+              />
+              <ContactCard
+                actionLabel={CONTACTS.rebbetzin.cta}
+                name={CONTACTS.rebbetzin.name}
+                phone={CONTACTS.rebbetzin.phone}
+                role={CONTACTS.rebbetzin.role}
+              />
+            </div>
+          </div>
+        ) : activeOverlay === "laws" ? (
+          <div className="space-y-4">
+            {LAW_SECTIONS.map((section) => (
+              <Card key={section.title} className="bg-white/82" tone="default">
+                <h3 className="font-heading text-2xl text-text-plum">{section.title}</h3>
+                <div className="mt-3 space-y-3 text-sm text-slate-700 sm:text-base">
+                  {section.body.map((paragraph) => (
+                    <p key={paragraph}>{paragraph}</p>
+                  ))}
+                  {section.bullets ? (
+                    <ul className="space-y-2">
+                      {section.bullets.map((bullet) => (
+                        <li key={bullet} className="flex items-start gap-2">
+                          <span className="mt-1 text-text-plum">•</span>
+                          <span>{bullet}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
+              </Card>
+            ))}
+          </div>
+        ) : null}
+      </OverlaySheet>
     </section>
   );
 }
@@ -841,6 +1108,59 @@ function StatusCheckbox({
   );
 }
 
+function AttentionBorder() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 h-full w-full"
+      preserveAspectRatio="none"
+      viewBox="0 0 100 100"
+    >
+      <defs>
+        <linearGradient id="hefsek-attention-gradient" x1="0%" x2="100%" y1="0%" y2="0%">
+          <stop offset="0%" stopColor="#f6c6cf" />
+          <stop offset="45%" stopColor="#875664" />
+          <stop offset="100%" stopColor="#f3d3da" />
+        </linearGradient>
+        <filter id="hefsek-attention-glow" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur result="blur" stdDeviation="1.4" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      <rect
+        x="1.5"
+        y="1.5"
+        width="97"
+        height="97"
+        rx="12"
+        ry="12"
+        fill="none"
+        opacity="0.3"
+        stroke="#e7a2b1"
+        strokeWidth="2"
+      />
+      <rect
+        data-attention-outline
+        x="1.5"
+        y="1.5"
+        width="97"
+        height="97"
+        rx="12"
+        ry="12"
+        fill="none"
+        filter="url(#hefsek-attention-glow)"
+        pathLength="400"
+        stroke="url(#hefsek-attention-gradient)"
+        strokeLinecap="round"
+        strokeWidth="3"
+      />
+    </svg>
+  );
+}
+
 function InfoLabel({
   icon = "info",
   label,
@@ -854,6 +1174,84 @@ function InfoLabel({
     <div className="inline-flex items-center gap-2 text-sm text-slate-600">
       <Icon className="h-4 w-4 shrink-0 text-text-plum" />
       <span>{label}</span>
+    </div>
+  );
+}
+
+function ContactCard({
+  actionLabel,
+  name,
+  phone,
+  role,
+}: {
+  actionLabel: string;
+  name: string;
+  phone: string;
+  role: string;
+}) {
+  return (
+    <a
+      className="group rounded-[1.9rem] border border-white/75 bg-white/82 p-5 shadow-soft transition hover:bg-white"
+      href={`tel:${phone.replace(/-/g, "")}`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-text-plum">{actionLabel}</p>
+          <p className="mt-2 font-heading text-2xl text-slate-900">{name}</p>
+          <p className="mt-1 text-sm text-slate-600">{role}</p>
+          <p className="mt-3 text-base font-semibold text-slate-800">{phone}</p>
+        </div>
+        <span className="rounded-2xl bg-brand-blush/45 p-3 text-text-plum transition group-hover:bg-brand-blush/65">
+          <Phone className="h-5 w-5" />
+        </span>
+      </div>
+    </a>
+  );
+}
+
+function OverlaySheet({
+  children,
+  onClose,
+  open,
+  title,
+}: {
+  children: ReactNode;
+  onClose: () => void;
+  open: boolean;
+  title: string;
+}) {
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 px-4 py-8 backdrop-blur-sm">
+      <div
+        aria-hidden="true"
+        className="absolute inset-0"
+        onClick={onClose}
+      />
+      <Card
+        className="relative max-h-[88vh] w-full max-w-4xl overflow-y-auto rounded-[2.2rem] border-white/80 bg-bg-main/95 p-5 sm:p-6"
+        role="dialog"
+        tone="stone"
+      >
+        <div className="mb-5 flex items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-text-plum">מתוך החוברת</p>
+            <h2 className="mt-1 font-heading text-3xl text-slate-900">{title}</h2>
+          </div>
+          <button
+            aria-label="סגירת חלון"
+            className="rounded-full border border-white/80 bg-white/85 p-2 text-slate-600 transition hover:bg-white"
+            type="button"
+            onClick={onClose}
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        {children}
+      </Card>
     </div>
   );
 }
@@ -897,54 +1295,6 @@ function CheckSlotControl({
         </Button>
       </div>
     </div>
-  );
-}
-
-function PrayerHandsIllustration({ className = "" }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 160 160"
-      aria-hidden="true"
-      className={className}
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <circle cx="80" cy="80" r="62" fill="rgba(207, 249, 228, 0.65)" />
-      <path
-        d="M78 118C73 108 70 95 67 84C64 72 58 59 49 47C43 39 34 41 34 50C34 57 40 65 44 73C49 84 50 96 55 108C58 116 67 122 78 118Z"
-        fill="#F7D7DF"
-        stroke="#AF6977"
-        strokeWidth="3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M82 118C87 108 90 95 93 84C96 72 102 59 111 47C117 39 126 41 126 50C126 57 120 65 116 73C111 84 110 96 105 108C102 116 93 122 82 118Z"
-        fill="#F7D7DF"
-        stroke="#AF6977"
-        strokeWidth="3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M68 78C68 61 72 45 80 34C88 45 92 61 92 78"
-        stroke="#875664"
-        strokeWidth="4"
-        strokeLinecap="round"
-      />
-      <path
-        d="M61 126C67 131 73 134 80 134C87 134 93 131 99 126"
-        stroke="#C5966F"
-        strokeWidth="4"
-        strokeLinecap="round"
-      />
-      <path
-        d="M80 24L82.8 31.2L90 34L82.8 36.8L80 44L77.2 36.8L70 34L77.2 31.2L80 24Z"
-        fill="#E7A2B1"
-      />
-      <circle cx="107" cy="35" r="4" fill="#F0AABD" />
-      <circle cx="53" cy="40" r="3.5" fill="#DCAA86" />
-    </svg>
   );
 }
 

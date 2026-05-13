@@ -127,6 +127,10 @@ body {
     animation: date-success-pop 0.45s ease-out;
   }
 
+  .cta-arrow-bob {
+    animation: cta-arrow-bob 1.6s ease-in-out infinite;
+  }
+
   .native-date-input {
     appearance: none;
     -webkit-appearance: none;
@@ -152,36 +156,6 @@ body {
   .native-date-input::-webkit-datetime-edit-day-field,
   .native-date-input::-webkit-datetime-edit-year-field {
     color: transparent;
-  }
-
-  .attention-ring {
-    position: relative;
-    isolation: isolate;
-  }
-
-  .attention-ring > * {
-    position: relative;
-    z-index: 1;
-  }
-
-  .attention-ring::before {
-    content: "";
-    position: absolute;
-    inset: -2px;
-    border-radius: inherit;
-    padding: 2px;
-    background: conic-gradient(
-      from 0deg,
-      rgba(231, 162, 177, 0.95),
-      rgba(135, 86, 100, 0.9),
-      rgba(231, 162, 177, 0.95)
-    );
-    -webkit-mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    animation: attention-ring-spin 3.6s linear infinite;
   }
 
   .phase-chip {
@@ -393,13 +367,17 @@ body {
   }
 }
 
-@keyframes attention-ring-spin {
+@keyframes cta-arrow-bob {
   0% {
-    transform: rotate(0deg);
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(4px);
   }
 
   100% {
-    transform: rotate(360deg);
+    transform: translateY(0);
   }
 }
 
@@ -442,7 +420,7 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .hero-bloom,
   .attention-pulse,
-  .attention-ring::before,
+  .cta-arrow-bob,
   .nav-icon-back,
   .nav-icon-next,
   .reset-spin,
