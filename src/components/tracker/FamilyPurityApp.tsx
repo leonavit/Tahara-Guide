@@ -30,6 +30,7 @@ import {
   canEnterMikvehPhase,
   dayHasMandatoryCompletion,
   formatDisplayDate,
+  formatHebrewDate,
   getCompletedChecksCount,
   getMandatoryCompletionCount,
   getUnlockedPhases,
@@ -444,11 +445,14 @@ export default function FamilyPurityApp() {
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
                 <Card className="bg-white/80" tone="default">
                   <InfoLabel label="היום המוקדם להפסק טהרה" />
-                  <p className="mt-2 text-lg font-semibold text-slate-900">
-                    {tracker.periodStartDate
-                      ? formatDisplayDate(earliestHefsekDate)
-                      : "יופיע לאחר בחירת תאריך"}
-                  </p>
+                  {tracker.periodStartDate ? (
+                    <DualDateText
+                      date={earliestHefsekDate}
+                      primaryClassName="mt-2 text-lg font-semibold text-slate-900"
+                    />
+                  ) : (
+                    <p className="mt-2 text-lg font-semibold text-slate-900">יופיע לאחר בחירת תאריך</p>
+                  )}
                 </Card>
 
                 <Card className="bg-white/80" tone="default">
@@ -492,19 +496,26 @@ export default function FamilyPurityApp() {
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
                   <Card className="bg-bg-stone/85" tone="stone">
                     <InfoLabel label="תחילת שבעה נקיים" />
-                    <p className="mt-2 font-semibold text-slate-900">
-                      {tracker.hefsekDate
-                        ? formatDisplayDate(cleanDayStart)
-                        : "יופיע לאחר בחירת תאריך"}
-                    </p>
+                    {tracker.hefsekDate ? (
+                      <DualDateText
+                        date={cleanDayStart}
+                        primaryClassName="mt-2 font-semibold text-slate-900"
+                      />
+                    ) : (
+                      <p className="mt-2 font-semibold text-slate-900">יופיע לאחר בחירת תאריך</p>
+                    )}
                   </Card>
                   <Card className="bg-status-sage/45" tone="sage">
                     <InfoLabel label="ליל הטבילה המחושב" />
-                    <p className="mt-2 font-semibold text-slate-900">
-                      {tracker.hefsekDate
-                        ? `${formatDisplayDate(tracker.mikvehNightDate)} אחרי צאת הכוכבים`
-                        : "יופיע לאחר בחירת תאריך"}
-                    </p>
+                    {tracker.hefsekDate ? (
+                      <DualDateText
+                        date={tracker.mikvehNightDate}
+                        primaryClassName="mt-2 font-semibold text-slate-900"
+                        suffix="אחרי צאת הכוכבים"
+                      />
+                    ) : (
+                      <p className="mt-2 font-semibold text-slate-900">יופיע לאחר בחירת תאריך</p>
+                    )}
                   </Card>
                 </div>
               </div>
@@ -609,9 +620,12 @@ export default function FamilyPurityApp() {
                   <p className="text-[0.68rem] uppercase tracking-[0.12em] text-slate-500 sm:text-xs">
                     ליל טבילה
                   </p>
-                  <p className="mt-1 text-xs font-semibold text-slate-900 sm:mt-2 sm:text-sm">
-                    {formatDisplayDate(tracker.mikvehNightDate)}
-                  </p>
+                  <DualDateText
+                    containerClassName="text-center"
+                    date={tracker.mikvehNightDate}
+                    primaryClassName="mt-1 text-xs font-semibold text-slate-900 sm:mt-2 sm:text-sm"
+                    secondaryClassName="mt-1 text-[0.68rem] text-text-plum/80 sm:text-xs"
+                  />
                 </Card>
               </div>
             </div>
@@ -628,7 +642,11 @@ export default function FamilyPurityApp() {
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="text-lg font-semibold text-slate-900">יום {day.dayNumber}</p>
-                      <p className="text-sm text-slate-600">{formatDisplayDate(day.date)}</p>
+                      <DualDateText
+                        date={day.date}
+                        primaryClassName="text-sm text-slate-600"
+                        secondaryClassName="mt-0.5 text-xs text-text-plum/80"
+                      />
                     </div>
                     {day.mandatory ? (
                       <span className="rounded-full bg-brand-blush px-3 py-1 text-sm font-semibold text-text-plum">
@@ -713,9 +731,10 @@ export default function FamilyPurityApp() {
 
                 <div className="mt-6 rounded-[2rem] bg-[#cff9e4] p-5 shadow-none">
                   <InfoLabel label="ליל הטבילה" />
-                  <p className="mt-2 text-2xl font-semibold text-slate-900">
-                    {formatDisplayDate(tracker.mikvehNightDate)}
-                  </p>
+                  <DualDateText
+                    date={tracker.mikvehNightDate}
+                    primaryClassName="mt-2 text-2xl font-semibold text-slate-900"
+                  />
                   <p className="mt-2 text-sm text-slate-600">הגעה לטבילה: אחרי צאת הכוכבים.</p>
                 </div>
 
@@ -1023,6 +1042,7 @@ interface DateInputFieldProps {
 function DateInputField({ label, min, onChange, value }: DateInputFieldProps) {
   const hasValue = Boolean(value);
   const displayValue = hasValue ? formatDisplayDate(value) : "לחצי לבחירת תאריך";
+  const hebrewValue = hasValue ? formatHebrewDate(value) : "";
 
   return (
     <label className="mt-6 block max-w-xl text-sm font-semibold text-slate-700">
@@ -1038,11 +1058,24 @@ function DateInputField({ label, min, onChange, value }: DateInputFieldProps) {
         <div className={dateFieldDisplayClass}>
           <span
             className={[
-              "flex-1 truncate text-right",
+              "flex-1 text-right",
               hasValue ? "text-slate-900" : "text-slate-400",
             ].join(" ")}
           >
-            {displayValue}
+            {hasValue ? (
+              <>
+                <span className="block truncate text-sm font-semibold text-slate-900 sm:text-base">
+                  {displayValue}
+                </span>
+                {hebrewValue ? (
+                  <span className="mt-0.5 block truncate text-xs font-normal text-text-plum/85 sm:text-sm">
+                    {hebrewValue}
+                  </span>
+                ) : null}
+              </>
+            ) : (
+              displayValue
+            )}
           </span>
           <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center">
             {hasValue ? (
@@ -1058,6 +1091,32 @@ function DateInputField({ label, min, onChange, value }: DateInputFieldProps) {
         </div>
       </div>
     </label>
+  );
+}
+
+function DualDateText({
+  containerClassName = "text-right",
+  date,
+  primaryClassName,
+  secondaryClassName = "mt-1 text-sm text-text-plum/80",
+  suffix,
+}: {
+  containerClassName?: string;
+  date: string;
+  primaryClassName: string;
+  secondaryClassName?: string;
+  suffix?: string;
+}) {
+  const hebrewDate = formatHebrewDate(date);
+
+  return (
+    <div className={containerClassName}>
+      <p className={primaryClassName}>
+        {formatDisplayDate(date)}
+        {suffix ? ` ${suffix}` : ""}
+      </p>
+      {hebrewDate ? <p className={secondaryClassName}>{hebrewDate}</p> : null}
+    </div>
   );
 }
 

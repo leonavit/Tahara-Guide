@@ -126,6 +126,19 @@ export function parseDate(dateString: string) {
   return new Date(Date.UTC(year, month - 1, day, 12));
 }
 
+const displayDateFormatter = new Intl.DateTimeFormat("he-IL", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+
+const hebrewDateFormatter = new Intl.DateTimeFormat("he-IL-u-ca-hebrew", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+
 export function toIsoDate(date: Date) {
   return date.toISOString().slice(0, 10);
 }
@@ -169,12 +182,15 @@ export function formatDisplayDate(dateString: string) {
     return "טרם נבחר תאריך";
   }
 
-  return new Intl.DateTimeFormat("he-IL", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(parseDate(dateString));
+  return displayDateFormatter.format(parseDate(dateString));
+}
+
+export function formatHebrewDate(dateString: string) {
+  if (!isValidDateString(dateString)) {
+    return "";
+  }
+
+  return hebrewDateFormatter.format(parseDate(dateString));
 }
 
 export function getCompletedChecksCount(cleanDays: CleanDayEntry[]) {
