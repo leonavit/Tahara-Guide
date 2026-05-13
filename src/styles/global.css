@@ -15,7 +15,7 @@ html {
 body {
   min-height: 100vh;
   background:
-    radial-gradient(circle at top, rgba(230, 201, 207, 0.26), transparent 36%),
+    radial-gradient(circle at top, rgba(241, 192, 202, 0.32), transparent 36%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.62) 0%, rgba(246, 241, 235, 1) 42%);
   color: #46363d;
   font-family: var(--font-body);
@@ -49,7 +49,7 @@ body {
   }
 
   ::selection {
-    background-color: rgba(216, 180, 184, 0.35);
+    background-color: rgba(231, 162, 177, 0.35);
   }
 }
 
@@ -65,7 +65,7 @@ body {
   .paper-shell {
     position: relative;
     background:
-      radial-gradient(circle at top, rgba(230, 201, 207, 0.16), transparent 35%),
+      radial-gradient(circle at top, rgba(241, 192, 202, 0.22), transparent 35%),
       linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(246, 241, 235, 0.92));
     isolation: isolate;
   }
@@ -75,9 +75,9 @@ body {
     position: absolute;
     inset: 0;
     background-image:
-      radial-gradient(circle at 12% 18%, rgba(216, 180, 184, 0.12) 0, transparent 18%),
-      radial-gradient(circle at 80% 24%, rgba(201, 214, 207, 0.12) 0, transparent 18%),
-      radial-gradient(circle at 36% 72%, rgba(230, 201, 207, 0.12) 0, transparent 12%);
+      radial-gradient(circle at 12% 18%, rgba(231, 162, 177, 0.16) 0, transparent 18%),
+      radial-gradient(circle at 80% 24%, rgba(187, 222, 208, 0.15) 0, transparent 18%),
+      radial-gradient(circle at 36% 72%, rgba(241, 192, 202, 0.16) 0, transparent 12%);
     opacity: 0.9;
     pointer-events: none;
   }
@@ -86,7 +86,7 @@ body {
     font-family: var(--font-heading);
     letter-spacing: -0.02em;
     line-height: 0.9;
-    text-shadow: 0 10px 30px rgba(142, 111, 120, 0.12);
+    text-shadow: 0 10px 30px rgba(135, 86, 100, 0.16);
   }
 
   .cover-script {
@@ -97,7 +97,7 @@ body {
   .hero-bloom {
     transform-origin: 50% 100%;
     animation: bloom-sway 5.2s ease-in-out infinite;
-    filter: drop-shadow(0 16px 34px rgba(142, 111, 120, 0.14));
+    filter: drop-shadow(0 16px 34px rgba(135, 86, 100, 0.18));
   }
 
   .attention-pulse {
@@ -126,6 +126,85 @@ body {
   .date-status-success {
     animation: date-success-pop 0.45s ease-out;
   }
+
+  .phase-chip {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .phase-chip > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .phase-chip::before,
+  .phase-chip::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .phase-chip::before {
+    background:
+      radial-gradient(circle at 18% 20%, rgba(255, 255, 255, 0.48) 0, transparent 24%),
+      radial-gradient(circle at 82% 22%, rgba(255, 255, 255, 0.28) 0, transparent 18%),
+      radial-gradient(circle at 50% 78%, rgba(135, 86, 100, 0.09) 0, transparent 38%);
+    opacity: 0.95;
+  }
+
+  .phase-chip::after {
+    inset: 12px;
+    border-radius: 1.2rem;
+    background-image:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0, transparent 58%),
+      radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.35) 0 1px, transparent 1.5px),
+      radial-gradient(circle at 72% 30%, rgba(255, 255, 255, 0.22) 0 1px, transparent 1.5px);
+    background-size: auto, 16px 16px, 20px 20px;
+    opacity: 0.7;
+    animation: phase-chip-drift 11s linear infinite;
+  }
+
+  .stage-ornament {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .stage-ornament > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .stage-ornament::before,
+  .stage-ornament::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+  }
+
+  .stage-ornament::before {
+    inset: 0;
+    background:
+      radial-gradient(circle at 14% 18%, rgba(255, 255, 255, 0.3) 0, transparent 18%),
+      radial-gradient(circle at 88% 14%, rgba(255, 255, 255, 0.18) 0, transparent 12%),
+      linear-gradient(135deg, rgba(135, 86, 100, 0.08), transparent 45%);
+    opacity: 0.9;
+  }
+
+  .stage-ornament::after {
+    top: -26px;
+    left: -20px;
+    width: 140px;
+    height: 140px;
+    border-radius: 999px;
+    background:
+      radial-gradient(circle, rgba(255, 255, 255, 0.28) 0 30%, transparent 31%),
+      radial-gradient(circle, rgba(255, 255, 255, 0.18) 0 10%, transparent 11%);
+    opacity: 0.42;
+    animation: stage-orbit 14s ease-in-out infinite;
+  }
 }
 
 @layer utilities {
@@ -149,7 +228,7 @@ body {
   0%,
   100% {
     transform: translateY(0) scale(1);
-    box-shadow: 0 12px 28px -22px rgba(142, 111, 120, 0.45);
+    box-shadow: 0 12px 28px -22px rgba(135, 86, 100, 0.5);
   }
 
   30% {
@@ -158,7 +237,7 @@ body {
 
   55% {
     transform: translateY(0) scale(1);
-    box-shadow: 0 20px 36px -18px rgba(216, 180, 184, 0.65);
+    box-shadow: 0 20px 36px -18px rgba(231, 162, 177, 0.7);
   }
 }
 
@@ -202,7 +281,7 @@ body {
   0%,
   100% {
     transform: translateX(0) rotate(0deg);
-    box-shadow: 0 0 0 0 rgba(216, 180, 184, 0);
+    box-shadow: 0 0 0 0 rgba(231, 162, 177, 0);
   }
 
   35% {
@@ -211,7 +290,7 @@ body {
 
   55% {
     transform: translateX(2px) rotate(6deg);
-    box-shadow: 0 0 0 10px rgba(216, 180, 184, 0);
+    box-shadow: 0 0 0 10px rgba(231, 162, 177, 0);
   }
 }
 
@@ -232,6 +311,31 @@ body {
   }
 }
 
+@keyframes phase-chip-drift {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(-8px, 6px, 0);
+  }
+
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes stage-orbit {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(16px, 12px, 0) scale(1.06);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hero-bloom,
   .attention-pulse,
@@ -239,7 +343,9 @@ body {
   .nav-icon-next,
   .reset-spin,
   .date-status-prompt,
-  .date-status-success {
+  .date-status-success,
+  .phase-chip::after,
+  .stage-ornament::after {
     animation: none;
   }
 }

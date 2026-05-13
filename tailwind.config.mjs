@@ -4,13 +4,13 @@ export default {
   theme: {
     extend: {
       colors: {
-        "bg-main": "#F6F1EB",
-        "bg-stone": "#E7E3DE",
-        "brand-blush": "#E6C9CF",
-        "brand-rose": "#D8B4B8",
-        "status-sage": "#C9D6CF",
-        "status-olive": "#BFC7BC",
-        "text-plum": "#8E6F78",
+        "bg-main": "#F8F0E8",
+        "bg-stone": "#EADCD2",
+        "brand-blush": "#F1C0CA",
+        "brand-rose": "#E7A2B1",
+        "status-sage": "#BBDED0",
+        "status-olive": "#C5D5B9",
+        "text-plum": "#875664",
       },
       fontFamily: {
         sans: ["Lunasima", "Noto Sans Hebrew", "Segoe UI", "Arial", "sans-serif"],

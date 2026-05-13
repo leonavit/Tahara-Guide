@@ -7,6 +7,7 @@ import {
   ArrowDown,
   Check,
   CheckCircle2,
+  CircleHelp,
   Droplets,
   Hand,
   Info,
@@ -276,7 +277,7 @@ export default function FamilyPurityApp() {
     switch (tracker.activePhase) {
       case "period":
         return (
-          <Card className="overflow-hidden" tone="rose">
+          <Card className="stage-ornament overflow-hidden" tone="rose">
             <div className="max-w-4xl" data-stage-item>
               <p className="text-sm font-semibold text-text-plum">שלב 1</p>
               <h2 className="mt-2 font-heading text-3xl text-slate-900">ימי הנדודים</h2>
@@ -302,7 +303,7 @@ export default function FamilyPurityApp() {
                 </Card>
 
                 <Card className="bg-white/80" tone="default">
-                  <InfoLabel label="מה קורה עכשיו?" />
+                  <InfoLabel icon="question" label="מה קורה עכשיו?" />
                   <p className="mt-2 text-slate-700">
                     עד לשלב הבא נשארים בימי הנדודים. כשהדימום פוסק והיום החמישי
                     מגיע, אפשר לעבור להפסק טהרה.
@@ -322,7 +323,7 @@ export default function FamilyPurityApp() {
 
       case "hefsek":
         return (
-          <Card className="overflow-hidden" tone="default">
+          <Card className="stage-ornament overflow-hidden" tone="default">
             <div className="grid gap-5 lg:grid-cols-[1.08fr_0.92fr]">
               <div data-stage-item>
                 <p className="text-sm font-semibold text-text-plum">שלב 2</p>
@@ -360,6 +361,7 @@ export default function FamilyPurityApp() {
               </div>
 
               <div className="space-y-4" data-stage-item>
+                <p className="font-heading text-2xl text-text-plum">שלב הבדיקה</p>
                 <Card tone="stone">
                   <div className="inline-flex items-center gap-2">
                     <Info className="h-4 w-4 text-text-plum" />
@@ -375,7 +377,7 @@ export default function FamilyPurityApp() {
                 <button
                   aria-checked={tracker.hefsekConfirmed}
                   className={[
-                    "flex w-full items-center justify-between rounded-[1.75rem] border px-5 py-4 text-right transition duration-300",
+                    "flex w-full items-start justify-between gap-4 rounded-[1.75rem] border px-5 py-4 text-right transition duration-300",
                     tracker.hefsekConfirmed
                       ? "border-status-olive bg-status-sage/65"
                       : "attention-pulse border-brand-rose/60 bg-white/85 shadow-blush hover:bg-white",
@@ -384,22 +386,18 @@ export default function FamilyPurityApp() {
                   type="button"
                   onClick={() => setHefsekConfirmed(!tracker.hefsekConfirmed)}
                 >
-                  <div>
-                    <p className="font-semibold text-slate-900">הבדיקה הצליחה</p>
-                    <p className="mt-1 text-sm text-slate-600">
-                      סמני לאחר שבדיקת ההפסק יצאה נקייה.
-                    </p>
+                  <div className="flex items-start gap-3">
+                    <StatusCheckbox checked={tracker.hefsekConfirmed} className="mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-slate-900">סמני שהבדיקה הצליחה</p>
+                      <p className="mt-1 text-sm text-slate-600">
+                        סמני לאחר שבדיקת ההפסק יצאה נקייה.
+                      </p>
+                    </div>
                   </div>
-                  <span
-                    className={[
-                      "rounded-full px-4 py-2 text-sm font-semibold",
-                      tracker.hefsekConfirmed
-                        ? "bg-white text-text-plum"
-                        : "bg-bg-stone text-slate-600",
-                    ].join(" ")}
-                  >
-                    {tracker.hefsekConfirmed ? "סומן בהצלחה" : "טרם סומן"}
-                  </span>
+                  <div className="pt-0.5">
+                    <SuccessIndicator checked={tracker.hefsekConfirmed} />
+                  </div>
                 </button>
               </div>
             </div>
@@ -422,7 +420,7 @@ export default function FamilyPurityApp() {
 
       case "clean-days":
         return (
-          <Card className="overflow-hidden" tone="default">
+          <Card className="stage-ornament overflow-hidden" tone="default">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div data-stage-item>
                 <p className="text-sm font-semibold text-text-plum">שלב 3</p>
@@ -433,28 +431,28 @@ export default function FamilyPurityApp() {
                 </p>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-3" data-stage-item>
-                <Card className="min-w-[10rem] bg-bg-stone/85" tone="stone">
-                  <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3" data-stage-item>
+                <Card className="bg-bg-stone/88 p-3 text-center sm:p-4" tone="stone">
+                  <p className="text-[0.68rem] uppercase tracking-[0.12em] text-slate-500 sm:text-xs">
                     בדיקות שסומנו
                   </p>
-                  <p className="mt-2 text-2xl font-semibold text-slate-900">
+                  <p className="mt-1 text-lg font-semibold text-slate-900 sm:mt-2 sm:text-2xl">
                     {completedChecks}/14
                   </p>
                 </Card>
-                <Card className="min-w-[10rem] bg-status-sage/45" tone="sage">
-                  <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
+                <Card className="bg-status-sage/55 p-3 text-center sm:p-4" tone="sage">
+                  <p className="text-[0.68rem] uppercase tracking-[0.12em] text-slate-500 sm:text-xs">
                     ימי חובה
                   </p>
-                  <p className="mt-2 text-2xl font-semibold text-slate-900">
+                  <p className="mt-1 text-lg font-semibold text-slate-900 sm:mt-2 sm:text-2xl">
                     {mandatoryCompleted}/3
                   </p>
                 </Card>
-                <Card className="min-w-[10rem] bg-brand-blush/40" tone="rose">
-                  <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
+                <Card className="bg-brand-blush/55 p-3 text-center sm:p-4" tone="rose">
+                  <p className="text-[0.68rem] uppercase tracking-[0.12em] text-slate-500 sm:text-xs">
                     ליל טבילה
                   </p>
-                  <p className="mt-2 text-sm font-semibold text-slate-900">
+                  <p className="mt-1 text-xs font-semibold text-slate-900 sm:mt-2 sm:text-sm">
                     {formatDisplayDate(tracker.mikvehNightDate)}
                   </p>
                 </Card>
@@ -466,7 +464,7 @@ export default function FamilyPurityApp() {
                 <Card
                   key={day.dayNumber}
                   className={[
-                    "border-white/75 bg-white/75",
+                    "border-white/75 bg-white/78",
                     day.mandatory ? "ring-1 ring-brand-rose/35" : "",
                   ].join(" ")}
                 >
@@ -524,7 +522,7 @@ export default function FamilyPurityApp() {
             </div>
 
             <div
-              className="mt-6 rounded-3xl border border-brand-rose/35 bg-brand-blush/35 p-4 text-sm text-slate-700"
+              className="mt-6 rounded-3xl border border-brand-rose/45 bg-brand-blush/45 p-4 text-sm text-slate-700"
               data-stage-item
             >
               סימון &quot;מראה דמי&quot; מאפס את הספירה לצורך זהירות ומחזיר את המעקב
@@ -546,7 +544,7 @@ export default function FamilyPurityApp() {
 
       case "mikveh":
         return (
-          <Card className="overflow-hidden" tone="sage">
+          <Card className="stage-ornament overflow-hidden" tone="sage">
             <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
               <div data-stage-item>
                 <p className="text-sm font-semibold text-text-plum">שלב 4</p>
@@ -556,7 +554,7 @@ export default function FamilyPurityApp() {
                   עצמה היא בלילה אחרי צאת הכוכבים.
                 </p>
 
-                <div className="mt-6 rounded-[2rem] border border-white/80 bg-white/75 p-5">
+                <div className="mt-6 rounded-[2rem] border border-white/80 bg-white/78 p-5">
                   <InfoLabel label="ליל הטבילה" />
                   <p className="mt-2 text-2xl font-semibold text-slate-900">
                     {formatDisplayDate(tracker.mikvehNightDate)}
@@ -564,7 +562,7 @@ export default function FamilyPurityApp() {
                   <p className="mt-2 text-sm text-slate-600">הגעה לטבילה: אחרי צאת הכוכבים.</p>
                 </div>
 
-                <div className="mt-4 rounded-[2rem] border border-white/80 bg-white/75 p-5">
+                <div className="mt-4 rounded-[2rem] border border-white/80 bg-white/78 p-5">
                   <InfoLabel label="התקדמות בהכנות" />
                   <p className="mt-2 text-2xl font-semibold text-slate-900">
                     {preparationCompleted}/{tracker.mikvehChecklist.length}
@@ -582,8 +580,8 @@ export default function FamilyPurityApp() {
                       className={[
                         "w-full rounded-[1.75rem] border px-5 py-4 text-right transition",
                         item.checked
-                          ? "border-status-olive bg-white/88"
-                          : "border-white/75 bg-white/70 hover:bg-white/88",
+                          ? "border-status-olive bg-white/90"
+                          : "border-white/75 bg-white/78 hover:bg-white/90",
                       ].join(" ")}
                       data-checklist-item
                       type="button"
@@ -601,20 +599,14 @@ export default function FamilyPurityApp() {
 
                         <div className="flex-1">
                           <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div>
-                              <p className="font-semibold text-slate-900">{item.label}</p>
-                              <p className="mt-1 text-sm text-slate-600">{item.description}</p>
+                            <div className="flex items-start gap-3">
+                              <StatusCheckbox checked={item.checked} className="mt-0.5" />
+                              <div>
+                                <p className="font-semibold text-slate-900">{item.label}</p>
+                                <p className="mt-1 text-sm text-slate-600">{item.description}</p>
+                              </div>
                             </div>
-                            <span
-                              className={[
-                                "inline-flex h-8 min-w-8 items-center justify-center rounded-full px-3 text-sm font-semibold",
-                                item.checked
-                                  ? "bg-status-sage text-slate-900"
-                                  : "bg-bg-stone text-slate-500",
-                              ].join(" ")}
-                            >
-                              {item.checked ? "בוצע" : "לביצוע"}
-                            </span>
+                            <SuccessIndicator checked={item.checked} />
                           </div>
                         </div>
                       </div>
@@ -626,7 +618,7 @@ export default function FamilyPurityApp() {
 
             {allPreparationsComplete ? (
               <div
-                className="mt-6 rounded-3xl border border-status-olive/70 bg-white/70 p-4 text-slate-800"
+                className="mt-6 rounded-3xl border border-status-olive/75 bg-white/78 p-4 text-slate-800"
                 data-stage-item
               >
                 כל ההכנות סומנו. מומלץ לבצע סקירה אחרונה סמוך ככל האפשר לטבילה
@@ -677,7 +669,7 @@ export default function FamilyPurityApp() {
       {hasStarted ? (
         <>
           <div ref={stepsRef} style={{ opacity: 0 }}>
-            <Card className="overflow-hidden" tone="stone">
+            <Card className="stage-ornament overflow-hidden" tone="stone">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                   <p className="text-sm font-semibold text-text-plum">אבני הדרך</p>
@@ -693,7 +685,7 @@ export default function FamilyPurityApp() {
                 </Button>
               </div>
 
-              <div className="mt-6 flex flex-wrap gap-4">
+              <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
                 {PHASES.map((phase) => {
                   const Icon = phaseIcons[phase.id];
                   const isUnlocked = unlockedPhases.includes(phase.id);
@@ -703,7 +695,7 @@ export default function FamilyPurityApp() {
                     <button
                       key={phase.id}
                       className={[
-                        "flex min-w-[12rem] items-center gap-3 rounded-[1.6rem] border px-4 py-3 text-right transition",
+                        "phase-chip flex w-full min-w-0 items-center gap-3 rounded-[1.6rem] border px-4 py-3 text-right transition max-[390px]:flex-col max-[390px]:justify-center max-[390px]:text-center",
                         isActive
                           ? "border-brand-rose bg-brand-blush/70"
                           : "border-white/75 bg-white/70",
@@ -713,7 +705,10 @@ export default function FamilyPurityApp() {
                       type="button"
                       onClick={() => setActivePhase(phase.id)}
                     >
-                      <div className="rounded-2xl bg-white/80 p-2.5" data-phase-icon>
+                      <div
+                        className="rounded-2xl bg-white/85 p-2.5 max-[390px]:mx-auto"
+                        data-phase-icon
+                      >
                         <Icon className="h-4 w-4 text-text-plum" />
                       </div>
                       <div>
@@ -805,10 +800,53 @@ function DateInputField({ label, min, onChange, value }: DateInputFieldProps) {
   );
 }
 
-function InfoLabel({ label }: { label: string }) {
+function StatusCheckbox({
+  checked,
+  className = "",
+}: {
+  checked: boolean;
+  className?: string;
+}) {
+  return (
+    <span
+      aria-hidden="true"
+      className={[
+        "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border transition",
+        checked
+          ? "border-emerald-300 bg-emerald-100 text-emerald-600 shadow-sm"
+          : "border-brand-rose/45 bg-white/90 text-transparent",
+        className,
+      ].join(" ")}
+    >
+      <Check className="h-3.5 w-3.5" />
+    </span>
+  );
+}
+
+function SuccessIndicator({ checked }: { checked: boolean }) {
+  if (!checked) {
+    return null;
+  }
+
+  return (
+    <span className="date-status-success inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 shadow-sm">
+      <Check className="h-4 w-4" />
+    </span>
+  );
+}
+
+function InfoLabel({
+  icon = "info",
+  label,
+}: {
+  icon?: "info" | "question";
+  label: string;
+}) {
+  const Icon = icon === "question" ? CircleHelp : Info;
+
   return (
     <div className="inline-flex items-center gap-2 text-sm text-slate-600">
-      <Info className="h-4 w-4 shrink-0 text-text-plum" />
+      <Icon className="h-4 w-4 shrink-0 text-text-plum" />
       <span>{label}</span>
     </div>
   );
@@ -867,35 +905,35 @@ function CoverBloom({ className = "" }: { className?: string }) {
     >
       <path
         d="M88 208C92 186 95 171 96 152C98 125 92 103 89 82"
-        stroke="#B9906D"
+        stroke="#C5966F"
         strokeWidth="3"
         strokeLinecap="round"
       />
       <path
         d="M95 154C106 140 118 131 132 126"
-        stroke="#C9A57F"
+        stroke="#D0A07A"
         strokeWidth="3"
         strokeLinecap="round"
       />
       <path
         d="M92 146C80 134 68 128 55 126"
-        stroke="#C9A57F"
+        stroke="#D0A07A"
         strokeWidth="3"
         strokeLinecap="round"
       />
-      <ellipse cx="90" cy="77" rx="22" ry="28" fill="#E8A8B7" />
-      <ellipse cx="65" cy="88" rx="19" ry="23" fill="#F1B7C5" />
-      <ellipse cx="113" cy="90" rx="19" ry="23" fill="#F4BBC8" />
-      <ellipse cx="81" cy="103" rx="19" ry="22" fill="#DFA1B0" />
-      <ellipse cx="104" cy="106" rx="17" ry="20" fill="#E7A9B8" />
-      <circle cx="92" cy="95" r="9" fill="#B97D88" />
+      <ellipse cx="90" cy="77" rx="22" ry="28" fill="#F0A7B9" />
+      <ellipse cx="65" cy="88" rx="19" ry="23" fill="#F7B3C4" />
+      <ellipse cx="113" cy="90" rx="19" ry="23" fill="#FABBC9" />
+      <ellipse cx="81" cy="103" rx="19" ry="22" fill="#E79AAF" />
+      <ellipse cx="104" cy="106" rx="17" ry="20" fill="#EDA4B8" />
+      <circle cx="92" cy="95" r="9" fill="#AF6977" />
       <ellipse
         cx="49"
         cy="136"
         rx="14"
         ry="6"
         transform="rotate(32 49 136)"
-        fill="#CDB092"
+        fill="#D6B28C"
       />
       <ellipse
         cx="65"
@@ -903,7 +941,7 @@ function CoverBloom({ className = "" }: { className?: string }) {
         rx="14"
         ry="6"
         transform="rotate(-18 65 150)"
-        fill="#D7B89A"
+        fill="#DEB592"
       />
       <ellipse
         cx="125"
@@ -911,7 +949,7 @@ function CoverBloom({ className = "" }: { className?: string }) {
         rx="16"
         ry="7"
         transform="rotate(-28 125 142)"
-        fill="#D3B295"
+        fill="#DAB08C"
       />
       <ellipse
         cx="140"
@@ -919,15 +957,15 @@ function CoverBloom({ className = "" }: { className?: string }) {
         rx="18"
         ry="8"
         transform="rotate(20 140 127)"
-        fill="#CFAC8C"
+        fill="#D8AA82"
       />
       <path
         d="M136 53L139 60L146 63L139 66L136 73L133 66L126 63L133 60L136 53Z"
-        fill="#D9B293"
+        fill="#E0AF88"
       />
-      <circle cx="150" cy="71" r="3" fill="#F1B6C4" />
-      <circle cx="41" cy="82" r="2.5" fill="#E9AFBD" />
-      <circle cx="29" cy="132" r="2.5" fill="#D4B095" />
+      <circle cx="150" cy="71" r="3" fill="#F7B2C3" />
+      <circle cx="41" cy="82" r="2.5" fill="#F0AABD" />
+      <circle cx="29" cy="132" r="2.5" fill="#DCAA86" />
     </svg>
   );
 }

@@ -8,10 +8,10 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const toneClasses: Record<CardTone, string> = {
-  default: "border-white/70 bg-white/65",
-  rose: "border-brand-rose/40 bg-brand-blush/50",
-  sage: "border-status-olive/60 bg-status-sage/55",
-  stone: "border-white/70 bg-bg-stone/80",
+  default: "border-white/75 bg-white/72",
+  rose: "border-brand-rose/55 bg-brand-blush/65",
+  sage: "border-status-olive/70 bg-status-sage/65",
+  stone: "border-white/75 bg-bg-stone/88",
 };
 
 export function Card({
