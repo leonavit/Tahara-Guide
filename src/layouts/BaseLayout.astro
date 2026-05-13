@@ -10,6 +10,8 @@ const {
   title = "מדריך טהרת המשפחה",
   description = "מדריך אינטראקטיבי בעברית לניהול פרטי של שלבי הטהרה, עם שמירה מקומית בלבד במכשיר.",
 } = Astro.props;
+
+const baseUrl = import.meta.env.BASE_URL;
 ---
 
 <!doctype html>
@@ -19,6 +21,13 @@ const {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={description} />
     <meta name="theme-color" content="#F6F1EB" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="טהרה" />
+    <link rel="manifest" href={`${baseUrl}manifest.webmanifest`} />
+    <link rel="icon" href={`${baseUrl}pwa/icon.svg`} type="image/svg+xml" />
+    <link rel="apple-touch-icon" href={`${baseUrl}pwa/apple-touch-icon.png`} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -29,5 +38,14 @@ const {
   </head>
   <body>
     <slot />
+    <script is:inline define:vars={{ baseUrl }}>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register(`${baseUrl}sw.js`).catch(() => {
+            // Ignore registration errors so the app still loads normally.
+          });
+        });
+      }
+    </script>
   </body>
 </html>
