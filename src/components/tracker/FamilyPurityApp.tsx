@@ -16,6 +16,7 @@ import {
   Phone,
   RefreshCcw,
   Scissors,
+  Share2,
   Sparkles,
   Sunset,
   Waves,
@@ -37,6 +38,7 @@ import {
   type CheckSlot,
   type CheckStatus,
   type PhaseId,
+  type TrackerState,
 } from "../../lib/tracker";
 import {
   beginHefsekPhase,
@@ -196,6 +198,80 @@ const LAW_SECTIONS = [
   },
 ] as const;
 
+const summaryTimestampFormatter = new Intl.DateTimeFormat("he-IL", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+function formatSummaryDate(dateString: string) {
+  if (!dateString) {
+    return "טרם נבחר";
+  }
+
+  const hebrewDate = formatHebrewDate(dateString);
+
+  return hebrewDate ? `${formatDisplayDate(dateString)} | ${hebrewDate}` : formatDisplayDate(dateString);
+}
+
+function formatCheckStatusLabel(status: CheckStatus) {
+  return status === "done" ? "סומנה" : "טרם סומנה";
+}
+
+function buildTrackerSummary(tracker: TrackerState) {
+  const lines = [
+    "סיכום תהליך טהרת המשפחה",
+    "",
+    `תאריך תחילת הדימום: ${formatSummaryDate(tracker.periodStartDate)}`,
+    `יום הפסק טהרה: ${formatSummaryDate(tracker.hefsekDate)}`,
+    `סימון שהבדיקה הצליחה: ${tracker.hefsekConfirmed ? "סומן" : "טרם סומן"}`,
+    `תחילת שבעה נקיים: ${formatSummaryDate(tracker.hefsekDate ? calculateCleanDayStart(tracker.hefsekDate) : "")}`,
+    `ליל הטבילה: ${formatSummaryDate(tracker.mikvehNightDate)}`,
+  ];
+
+  if (tracker.cleanDays.length) {
+    lines.push("", "שבעה נקיים");
+    tracker.cleanDays.forEach((day) => {
+      lines.push(
+        `יום ${day.dayNumber}: ${formatSummaryDate(day.date)} | בדיקת בוקר: ${formatCheckStatusLabel(day.morning)} | בדיקת ערב: ${formatCheckStatusLabel(day.evening)}${day.mandatory ? " | יום חובה" : ""}`,
+      );
+    });
+  }
+
+  if (tracker.mikvehChecklist.length) {
+    lines.push("", "הכנות לטבילה");
+    tracker.mikvehChecklist.forEach((item) => {
+      lines.push(`- ${item.label}: ${item.checked ? "סומן" : "טרם סומן"}`);
+    });
+  }
+
+  if (tracker.lastUpdatedAt) {
+    lines.push("", `עודכן לאחרונה: ${summaryTimestampFormatter.format(new Date(tracker.lastUpdatedAt))}`);
+  }
+
+  return lines.join("\n");
+}
+
+function downloadTrackerSummary(summaryText: string, tracker: TrackerState) {
+  if (typeof document === "undefined" || typeof window === "undefined") {
+    return;
+  }
+
+  const datePart = tracker.mikvehNightDate || tracker.hefsekDate || tracker.periodStartDate || "summary";
+  const blob = new Blob([summaryText], { type: "text/plain;charset=utf-8" });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = `tahara-process-summary-${datePart}.txt`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}
+
 type OverlaySheetKey = "intro" | "laws";
 
 export default function FamilyPurityApp() {
@@ -210,6 +286,8 @@ export default function FamilyPurityApp() {
   const previousPhaseRef = useRef<PhaseId | null>(null);
   const [activeOverlay, setActiveOverlay] = useState<OverlaySheetKey | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
+  const [isSharingSummary, setIsSharingSummary] = useState(false);
+  const [shareSummaryMessage, setShareSummaryMessage] = useState<string | null>(null);
 
   useEffect(() => {
     initializeTrackerStore();
@@ -417,6 +495,35 @@ export default function FamilyPurityApp() {
     }
 
     setHasStarted(true);
+  };
+
+  const handleShareSummary = async () => {
+    const summaryText = buildTrackerSummary(tracker);
+    setShareSummaryMessage(null);
+
+    try {
+      if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+        setIsSharingSummary(true);
+        await navigator.share({
+          title: "סיכום תהליך טהרת המשפחה",
+          text: summaryText,
+        });
+        setShareSummaryMessage("חלון השיתוף נפתח עם סיכום התהליך.");
+        return;
+      }
+
+      downloadTrackerSummary(summaryText, tracker);
+      setShareSummaryMessage("נוצר קובץ סיכום לשמירה במכשיר.");
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return;
+      }
+
+      downloadTrackerSummary(summaryText, tracker);
+      setShareSummaryMessage("לא נפתח חלון שיתוף, לכן נוצר קובץ סיכום לשמירה.");
+    } finally {
+      setIsSharingSummary(false);
+    }
   };
 
   const scrollToContactSection = () => {
@@ -810,6 +917,20 @@ export default function FamilyPurityApp() {
                     כֻּלָּךְ יָפָה רַעְיָתִי וּמוּם אֵין בָּךְ
                     <span className="mt-1 block text-2xl">(שיר השירים ד&apos;, ז&apos;)</span>
                   </h3>
+                  <div className="mt-5 flex w-full max-w-md flex-col items-center gap-3">
+                    <Button
+                      className="w-full sm:w-auto"
+                      disabled={isSharingSummary}
+                      onClick={handleShareSummary}
+                      variant="secondary"
+                    >
+                      <Share2 className="h-4 w-4" />
+                      {isSharingSummary ? "פותחת שיתוף..." : "שמור סיכום תהליך"}
+                    </Button>
+                    {shareSummaryMessage ? (
+                      <p className="text-sm text-slate-600">{shareSummaryMessage}</p>
+                    ) : null}
+                  </div>
                 </div>
               </div>
             ) : null}
