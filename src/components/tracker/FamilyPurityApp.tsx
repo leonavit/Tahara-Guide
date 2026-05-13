@@ -93,6 +93,8 @@ const CONTACTS = {
   },
 } as const;
 
+const WHATSAPP_MESSAGE = "שלום רב, הגעתי דרך האתר ויש לי שאלה 🙏🏻";
+
 const INTRO_PARAGRAPHS = [
   "הקשר שבין איש לאשתו הוא קשר נשמתי עמוק, קשר המבוסס מבריאת אדם וחוה. שלמות האדם מתממשת כאשר האיש והאישה מתאחדים לגוף אחד ולנשמה אחת.",
   "ברית הזוגיות מבקשת טיפוח מתמיד בשני המישורים, הקשר הרוחני והקשר הגופני. שמירת טהרת המשפחה מסייעת לבניית חיבורים אלו בסבב מעגלי של צמיחה.",
@@ -532,8 +534,11 @@ export default function FamilyPurityApp() {
                     <div className="relative flex shrink-0 items-start">
                       <StatusCheckbox checked={tracker.hefsekConfirmed} className="mt-0.5" />
                       {!tracker.hefsekConfirmed ? (
-                        <span className="pointer-events-none absolute -left-4 -top-3 inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand-blush/75 text-text-plum">
-                          <Hand className="date-status-prompt h-3.5 w-3.5" />
+                        <span
+                          aria-hidden="true"
+                          className="hefsek-pointer-cue pointer-events-none absolute top-full mt-1 inline-flex items-center justify-center text-lg"
+                        >
+                          ☝️
                         </span>
                       ) : null}
                     </div>
@@ -1110,10 +1115,7 @@ function ContactCard({
   role: string;
 }) {
   return (
-    <a
-      className="group rounded-[1.9rem] border border-white/75 bg-white/82 p-5 shadow-soft transition hover:bg-white"
-      href={`tel:${phone.replace(/-/g, "")}`}
-    >
+    <div className="group rounded-[1.9rem] border border-white/75 bg-white/82 p-5 shadow-soft transition hover:bg-white">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-text-plum">{actionLabel}</p>
@@ -1121,11 +1123,26 @@ function ContactCard({
           <p className="mt-1 text-sm text-slate-600">{role}</p>
           <p className="mt-3 text-base font-semibold text-slate-800">{phone}</p>
         </div>
-        <span className="rounded-2xl bg-brand-blush/45 p-3 text-text-plum transition group-hover:bg-brand-blush/65">
-          <Phone className="h-5 w-5" />
-        </span>
+        <div className="flex flex-col items-center gap-2">
+          <a
+            aria-label={`חיוג אל ${name}`}
+            className="rounded-2xl bg-brand-blush/45 p-3 text-text-plum transition hover:bg-brand-blush/65"
+            href={`tel:${phone.replace(/-/g, "")}`}
+          >
+            <Phone className="h-5 w-5" />
+          </a>
+          <a
+            aria-label={`פתיחת ווטסאפ עם ${name}`}
+            className="rounded-2xl bg-[#e3f7ec] p-3 text-[#1f7a4d] transition hover:bg-[#d3f2e3]"
+            href={getWhatsAppLink(phone)}
+            rel="noreferrer"
+            target="_blank"
+          >
+            <WhatsAppIcon className="h-5 w-5" />
+          </a>
+        </div>
       </div>
-    </a>
+    </div>
   );
 }
 
@@ -1140,40 +1157,107 @@ function OverlaySheet({
   open: boolean;
   title: string;
 }) {
+  const backdropRef = useRef<HTMLDivElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
+  useLayoutEffect(() => {
+    const backdrop = backdropRef.current;
+    const panel = panelRef.current;
+
+    if (!open || !backdrop || !panel) {
+      return;
+    }
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+
+    const ctx = gsap.context(() => {
+      const bodyChildren = gsap.utils.toArray<HTMLElement>("[data-overlay-body] > *");
+
+      gsap.fromTo(backdrop, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.22, ease: "power2.out" });
+      gsap.fromTo(
+        panel,
+        { autoAlpha: 0, y: 28, scale: 0.965 },
+        { autoAlpha: 1, y: 0, scale: 1, duration: 0.34, ease: "power3.out" },
+      );
+
+      if (bodyChildren.length) {
+        gsap.fromTo(
+          bodyChildren,
+          { autoAlpha: 0, y: 18 },
+          { autoAlpha: 1, y: 0, duration: 0.34, ease: "power2.out", stagger: 0.07, delay: 0.08 },
+        );
+      }
+    }, panel);
+
+    return () => ctx.revert();
+  }, [open, title]);
+
   if (!open) {
     return null;
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 px-4 py-8 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8">
       <div
         aria-hidden="true"
-        className="absolute inset-0"
+        ref={backdropRef}
+        className="absolute inset-0 bg-slate-900/30 backdrop-blur-sm"
         onClick={onClose}
       />
       <Card
-        className="relative max-h-[88vh] w-full max-w-4xl overflow-y-auto rounded-[2.2rem] border-white/80 bg-bg-main/95 p-5 sm:p-6"
+        className="relative flex max-h-[88vh] w-full max-w-4xl flex-col overflow-hidden rounded-[2.2rem] border-white/80 bg-bg-main/95 p-0"
         role="dialog"
         tone="stone"
       >
-        <div className="mb-5 flex items-start justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold text-text-plum">מתוך החוברת</p>
-            <h2 className="mt-1 font-heading text-3xl text-slate-900">{title}</h2>
+        <div ref={panelRef} className="flex min-h-0 flex-1 flex-col">
+          <div className="flex items-start justify-between gap-3 border-b border-white/65 px-5 py-5 sm:px-6">
+            <div>
+              <p className="text-sm font-semibold text-text-plum">מתוך החוברת</p>
+              <h2 className="mt-1 font-heading text-3xl text-slate-900">{title}</h2>
+            </div>
+            <button
+              aria-label="סגירת חלון"
+              className="rounded-full border border-white/80 bg-white/85 p-2 text-slate-600 transition hover:bg-white"
+              type="button"
+              onClick={onClose}
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
-          <button
-            aria-label="סגירת חלון"
-            className="rounded-full border border-white/80 bg-white/85 p-2 text-slate-600 transition hover:bg-white"
-            type="button"
-            onClick={onClose}
+          <div
+            className="overlay-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 py-5 sm:px-6"
+            data-overlay-body
           >
-            <X className="h-5 w-5" />
-          </button>
+            {children}
+          </div>
         </div>
-        {children}
       </Card>
     </div>
   );
+}
+
+function WhatsAppIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="currentColor"
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path d="M20.52 3.48A11.86 11.86 0 0 0 12.07 0C5.52 0 .18 5.34.18 11.89c0 2.1.55 4.15 1.6 5.96L0 24l6.33-1.66a11.84 11.84 0 0 0 5.73 1.47h.01c6.55 0 11.89-5.34 11.89-11.89 0-3.17-1.23-6.15-3.44-8.44Zm-8.45 18.32h-.01a9.83 9.83 0 0 1-5-1.37l-.36-.21-3.76.99 1-3.67-.24-.38a9.84 9.84 0 0 1-1.51-5.27c0-5.43 4.42-9.85 9.86-9.85 2.63 0 5.09 1.02 6.95 2.89a9.79 9.79 0 0 1 2.88 6.96c0 5.43-4.42 9.85-9.85 9.85Zm5.4-7.37c-.3-.15-1.77-.87-2.05-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.08-.3-.15-1.27-.47-2.42-1.49-.9-.8-1.5-1.79-1.68-2.09-.17-.3-.02-.46.13-.61.14-.14.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.91-2.22-.24-.58-.49-.5-.67-.5l-.57-.01c-.2 0-.52.08-.79.37-.27.3-1.04 1.02-1.04 2.5s1.07 2.9 1.22 3.1c.15.2 2.1 3.21 5.09 4.5.71.31 1.27.5 1.7.64.71.22 1.36.19 1.87.12.57-.08 1.77-.72 2.02-1.42.25-.7.25-1.3.17-1.42-.07-.12-.27-.2-.57-.35Z" />
+    </svg>
+  );
+}
+
+function getWhatsAppLink(phone: string) {
+  const digits = phone.replace(/\D/g, "");
+  const internationalNumber = digits.startsWith("0") ? `972${digits.slice(1)}` : digits;
+  const text = encodeURIComponent(WHATSAPP_MESSAGE);
+
+  return `https://wa.me/${internationalNumber}?text=${text}`;
 }
 
 function CheckSlotControl({
