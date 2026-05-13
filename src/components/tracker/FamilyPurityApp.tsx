@@ -198,7 +198,6 @@ type OverlaySheetKey = "intro" | "laws";
 export default function FamilyPurityApp() {
   const tracker = useStore(trackerStore);
   const heroRef = useRef<HTMLElement | null>(null);
-  const hefsekAttentionRef = useRef<HTMLButtonElement | null>(null);
   const checklistRef = useRef<HTMLDivElement | null>(null);
   const stepsRef = useRef<HTMLDivElement | null>(null);
   const phaseRef = useRef<HTMLDivElement | null>(null);
@@ -295,39 +294,6 @@ export default function FamilyPurityApp() {
 
     return () => ctx.revert();
   }, [tracker.activePhase]);
-
-  useEffect(() => {
-    const button = hefsekAttentionRef.current;
-
-    if (tracker.activePhase !== "hefsek" || tracker.hefsekConfirmed || !button) {
-      return;
-    }
-
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      return;
-    }
-
-    const ctx = gsap.context(() => {
-      const outlines = button.querySelectorAll<SVGRectElement>("[data-attention-outline]");
-
-      if (!outlines.length) {
-        return;
-      }
-
-      gsap.set(outlines, {
-        attr: { "stroke-dasharray": "84 316", "stroke-dashoffset": "0" },
-      });
-
-      gsap.to(outlines, {
-        attr: { "stroke-dashoffset": "-400" },
-        duration: 4.8,
-        ease: "none",
-        repeat: -1,
-      });
-    }, button);
-
-    return () => ctx.revert();
-  }, [tracker.activePhase, tracker.hefsekConfirmed]);
 
   useEffect(() => {
     const steps = stepsRef.current;
@@ -551,7 +517,6 @@ export default function FamilyPurityApp() {
                 </Card>
 
                 <button
-                  ref={hefsekAttentionRef}
                   aria-checked={tracker.hefsekConfirmed}
                   className={[
                     "relative flex w-full items-start gap-4 rounded-[1.75rem] border-2 px-5 py-4 text-right transition duration-300",
@@ -563,9 +528,15 @@ export default function FamilyPurityApp() {
                   type="button"
                   onClick={() => setHefsekConfirmed(!tracker.hefsekConfirmed)}
                 >
-                  {!tracker.hefsekConfirmed ? <AttentionBorder /> : null}
                   <div className="relative z-10 flex items-start gap-3">
-                    <StatusCheckbox checked={tracker.hefsekConfirmed} className="mt-0.5" />
+                    <div className="relative flex shrink-0 items-start">
+                      <StatusCheckbox checked={tracker.hefsekConfirmed} className="mt-0.5" />
+                      {!tracker.hefsekConfirmed ? (
+                        <span className="pointer-events-none absolute -left-4 -top-3 inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand-blush/75 text-text-plum">
+                          <Hand className="date-status-prompt h-3.5 w-3.5" />
+                        </span>
+                      ) : null}
+                    </div>
                     <div>
                       <p className="font-semibold text-slate-900">סמני שהבדיקה הצליחה</p>
                       <p className="mt-1 text-sm text-slate-600">
@@ -744,6 +715,12 @@ export default function FamilyPurityApp() {
                     {preparationCompleted}/{tracker.mikvehChecklist.length}
                   </p>
                 </div>
+
+                {allPreparationsComplete ? (
+                  <p className="mikveh-ready-note mt-3 text-sm text-slate-700">
+                    כל ההכנות סומנו. מומלץ לבצע סקירה אחרונה סמוך ככל האפשר לטבילה.
+                  </p>
+                ) : null}
               </div>
 
               <div ref={checklistRef} className="space-y-3" data-stage-item>
@@ -804,10 +781,6 @@ export default function FamilyPurityApp() {
                     כֻּלָּךְ יָפָה רַעְיָתִי וּמוּם אֵין בָּךְ
                     <span className="mt-1 block text-2xl">(שיר השירים ד&apos;, ז&apos;)</span>
                   </h3>
-                  <p className="mt-2 max-w-md text-sm text-slate-700">
-                    כל ההכנות סומנו. מומלץ לבצע סקירה אחרונה סמוך ככל האפשר לטבילה
-                    ולהמשיך בנחת.
-                  </p>
                 </div>
               </div>
             ) : null}
@@ -1006,7 +979,7 @@ export default function FamilyPurityApp() {
               <Card key={section.title} className="bg-white/82" tone="default">
                 <h3 className="font-heading text-2xl text-text-plum">{section.title}</h3>
                 <div className="mt-3 space-y-3 text-sm text-slate-700 sm:text-base">
-                  {section.body.map((paragraph) => (
+                  {(section.body ?? []).map((paragraph) => (
                     <p key={paragraph}>{paragraph}</p>
                   ))}
                   {section.bullets ? (
@@ -1105,59 +1078,6 @@ function StatusCheckbox({
     >
       <Check className="h-3.5 w-3.5" />
     </span>
-  );
-}
-
-function AttentionBorder() {
-  return (
-    <svg
-      aria-hidden="true"
-      className="pointer-events-none absolute inset-0 h-full w-full"
-      preserveAspectRatio="none"
-      viewBox="0 0 100 100"
-    >
-      <defs>
-        <linearGradient id="hefsek-attention-gradient" x1="0%" x2="100%" y1="0%" y2="0%">
-          <stop offset="0%" stopColor="#f6c6cf" />
-          <stop offset="45%" stopColor="#875664" />
-          <stop offset="100%" stopColor="#f3d3da" />
-        </linearGradient>
-        <filter id="hefsek-attention-glow" x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur result="blur" stdDeviation="1.4" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-      </defs>
-      <rect
-        x="1.5"
-        y="1.5"
-        width="97"
-        height="97"
-        rx="12"
-        ry="12"
-        fill="none"
-        opacity="0.3"
-        stroke="#e7a2b1"
-        strokeWidth="2"
-      />
-      <rect
-        data-attention-outline
-        x="1.5"
-        y="1.5"
-        width="97"
-        height="97"
-        rx="12"
-        ry="12"
-        fill="none"
-        filter="url(#hefsek-attention-glow)"
-        pathLength="400"
-        stroke="url(#hefsek-attention-gradient)"
-        strokeLinecap="round"
-        strokeWidth="3"
-      />
-    </svg>
   );
 }
 
