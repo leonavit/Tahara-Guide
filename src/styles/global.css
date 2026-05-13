@@ -137,6 +137,11 @@ body {
     animation: hefsek-pointer-cue 1.45s ease-in-out infinite;
   }
 
+  .active-phase-icon {
+    animation: active-phase-icon 1.8s ease-in-out infinite;
+    transform-origin: center;
+  }
+
   .native-date-input {
     appearance: none;
     -webkit-appearance: none;
@@ -426,6 +431,19 @@ body {
   }
 }
 
+@keyframes active-phase-icon {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    box-shadow: 0 8px 20px -16px rgba(135, 86, 100, 0.25);
+  }
+
+  50% {
+    transform: translateY(-3px) scale(1.04);
+    box-shadow: 0 14px 24px -16px rgba(135, 86, 100, 0.38);
+  }
+}
+
 @keyframes phase-chip-drift {
   0% {
     transform: translate3d(0, 0, 0);
@@ -479,6 +497,7 @@ body {
   .attention-pulse,
   .cta-arrow-bob,
   .hefsek-pointer-cue,
+  .active-phase-icon,
   .nav-icon-back,
   .nav-icon-next,
   .reset-spin,

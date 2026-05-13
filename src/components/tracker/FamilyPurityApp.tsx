@@ -6,11 +6,11 @@ import {
   ArrowRight,
   ArrowDown,
   BookOpenText,
+  CalendarDays,
   Check,
   CheckCircle2,
   CircleHelp,
   Droplets,
-  Hand,
   Info,
   MoonStar,
   Phone,
@@ -204,6 +204,7 @@ export default function FamilyPurityApp() {
   const stepsRef = useRef<HTMLDivElement | null>(null);
   const phaseRef = useRef<HTMLDivElement | null>(null);
   const stageAnchorRef = useRef<HTMLDivElement | null>(null);
+  const contactSectionRef = useRef<HTMLDivElement | null>(null);
   const phaseIconsAnimatedRef = useRef(false);
   const previousPhaseRef = useRef<PhaseId | null>(null);
   const [activeOverlay, setActiveOverlay] = useState<OverlaySheetKey | null>(null);
@@ -415,6 +416,10 @@ export default function FamilyPurityApp() {
     }
 
     setHasStarted(true);
+  };
+
+  const scrollToContactSection = () => {
+    contactSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const renderPhase = () => {
@@ -824,17 +829,21 @@ export default function FamilyPurityApp() {
           </div>
 
           <div className="mt-7 flex w-full max-w-3xl flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center">
-            <Button data-hero-cta onClick={revealTracker}>
-              {hasExistingProgress ? "המשך תהליך" : "התחל תהליך"}
-              <ArrowDown className="cta-arrow-bob h-4 w-4" />
-            </Button>
             <Button data-hero-cta variant="ghost" onClick={() => setActiveOverlay("intro")}>
-              הקדמה ויצירת קשר
-              <Phone className="h-4 w-4" />
+              הקדמה בקטנה
+              <Info className="h-4 w-4" />
             </Button>
             <Button data-hero-cta variant="ghost" onClick={() => setActiveOverlay("laws")}>
               הלכות
               <BookOpenText className="h-4 w-4" />
+            </Button>
+            <Button data-hero-cta variant="ghost" onClick={scrollToContactSection}>
+              יצירת קשר
+              <Phone className="h-4 w-4" />
+            </Button>
+            <Button data-hero-cta onClick={revealTracker}>
+              התחילי תהליך
+              <ArrowDown className="cta-arrow-bob h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -880,7 +889,10 @@ export default function FamilyPurityApp() {
                       onClick={() => setActivePhase(phase.id)}
                     >
                       <div
-                        className="rounded-2xl bg-white/85 p-2.5 max-[390px]:mx-auto"
+                        className={[
+                          "rounded-2xl bg-white/85 p-2.5 max-[390px]:mx-auto",
+                          isActive ? "active-phase-icon" : "",
+                        ].join(" ")}
                         data-phase-icon
                       >
                         <Icon className="h-4 w-4 text-text-plum" />
@@ -925,7 +937,7 @@ export default function FamilyPurityApp() {
         </>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div ref={contactSectionRef} className="grid gap-4 sm:grid-cols-2">
         <ContactCard
           actionLabel={CONTACTS.rabbi.cta}
           name={CONTACTS.rabbi.name}
@@ -963,25 +975,11 @@ export default function FamilyPurityApp() {
                 ))}
               </ul>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <ContactCard
-                actionLabel={CONTACTS.rabbi.cta}
-                name={CONTACTS.rabbi.name}
-                phone={CONTACTS.rabbi.phone}
-                role={CONTACTS.rabbi.role}
-              />
-              <ContactCard
-                actionLabel={CONTACTS.rebbetzin.cta}
-                name={CONTACTS.rebbetzin.name}
-                phone={CONTACTS.rebbetzin.phone}
-                role={CONTACTS.rebbetzin.role}
-              />
-            </div>
           </div>
         ) : activeOverlay === "laws" ? (
           <div className="space-y-4">
             {LAW_SECTIONS.map((section) => (
-              <Card key={section.title} className="bg-white/82" tone="default">
+              <Card key={section.title} className="bg-white" tone="default">
                 <h3 className="font-heading text-2xl text-text-plum">{section.title}</h3>
                 <div className="mt-3 space-y-3 text-sm text-slate-700 sm:text-base">
                   {(section.body ?? []).map((paragraph) => (
@@ -1053,7 +1051,7 @@ function DateInputField({ label, min, onChange, value }: DateInputFieldProps) {
               </span>
             ) : (
               <span className="date-status-prompt inline-flex h-7 w-7 items-center justify-center rounded-full bg-brand-blush/70 text-text-plum">
-                <Hand className="h-4 w-4" />
+                <CalendarDays className="h-4 w-4" />
               </span>
             )}
           </span>
