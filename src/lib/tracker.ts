@@ -139,6 +139,24 @@ const hebrewDateFormatter = new Intl.DateTimeFormat("he-IL-u-ca-hebrew", {
   year: "numeric",
 });
 
+const hebrewUnits = ["", "א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט"] as const;
+const hebrewTens: Record<number, string> = {
+  10: "י",
+  20: "כ",
+  30: "ל",
+  40: "מ",
+  50: "נ",
+  60: "ס",
+  70: "ע",
+  80: "פ",
+  90: "צ",
+};
+const hebrewHundreds: Array<[number, string]> = [
+  [300, "ש"],
+  [200, "ר"],
+  [100, "ק"],
+];
+
 export function toIsoDate(date: Date) {
   return date.toISOString().slice(0, 10);
 }
@@ -190,7 +208,85 @@ export function formatHebrewDate(dateString: string) {
     return "";
   }
 
-  return hebrewDateFormatter.format(parseDate(dateString));
+  const parts = hebrewDateFormatter.formatToParts(parseDate(dateString));
+  const day = extractNumericPart(parts.find((part) => part.type === "day")?.value ?? "");
+  const month = parts.find((part) => part.type === "month")?.value.trim() ?? "";
+  const year = extractNumericPart(parts.find((part) => part.type === "year")?.value ?? "");
+
+  if (!month || Number.isNaN(day) || Number.isNaN(year)) {
+    return hebrewDateFormatter.format(parseDate(dateString));
+  }
+
+  return `${formatHebrewNumeral(day)} ${month} ${formatHebrewYear(year)}`;
+}
+
+function extractNumericPart(value: string) {
+  const digits = value.replace(/[^\d]/g, "");
+  return digits ? Number.parseInt(digits, 10) : Number.NaN;
+}
+
+function formatHebrewYear(value: number) {
+  if (!Number.isInteger(value) || value <= 0) {
+    return "";
+  }
+
+  const thousands = Math.floor(value / 1000);
+  const remainder = value % 1000;
+  const thousandsText = thousands ? formatHebrewNumeral(thousands) : "";
+  const remainderText = remainder ? formatHebrewNumeral(remainder) : "";
+
+  return `${thousandsText}${remainderText}`;
+}
+
+function formatHebrewNumeral(value: number) {
+  if (!Number.isInteger(value) || value <= 0) {
+    return "";
+  }
+
+  const letters = toHebrewLetterSequence(value);
+
+  if (letters.length === 1) {
+    return `${letters}׳`;
+  }
+
+  return `${letters.slice(0, -1)}״${letters.slice(-1)}`;
+}
+
+function toHebrewLetterSequence(value: number) {
+  let remainder = value;
+  let output = "";
+
+  while (remainder >= 400) {
+    output += "ת";
+    remainder -= 400;
+  }
+
+  for (const [amount, letter] of hebrewHundreds) {
+    if (remainder >= amount) {
+      output += letter;
+      remainder -= amount;
+    }
+  }
+
+  if (remainder === 15) {
+    return `${output}טו`;
+  }
+
+  if (remainder === 16) {
+    return `${output}טז`;
+  }
+
+  const tensValue = Math.floor(remainder / 10) * 10;
+  if (tensValue > 0) {
+    output += hebrewTens[tensValue] ?? "";
+    remainder -= tensValue;
+  }
+
+  if (remainder > 0) {
+    output += hebrewUnits[remainder] ?? "";
+  }
+
+  return output;
 }
 
 export function getCompletedChecksCount(cleanDays: CleanDayEntry[]) {
