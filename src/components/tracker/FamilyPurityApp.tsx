@@ -186,6 +186,7 @@ export default function FamilyPurityApp() {
   const stageAnchorRef = useRef<HTMLDivElement | null>(null);
   const contactSectionRef = useRef<HTMLDivElement | null>(null);
   const phaseIconsAnimatedRef = useRef(false);
+  const contactCardsAnimatedRef = useRef(false);
   const previousPhaseRef = useRef<PhaseId | null>(null);
   const [activeOverlay, setActiveOverlay] = useState<OverlaySheetKey | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
@@ -308,6 +309,57 @@ export default function FamilyPurityApp() {
 
     return () => ctx.revert();
   }, [hasStarted]);
+
+  useEffect(() => {
+    const contactSection = contactSectionRef.current;
+
+    if (!contactSection || contactCardsAnimatedRef.current) {
+      return;
+    }
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      contactCardsAnimatedRef.current = true;
+      return;
+    }
+
+    const cards = Array.from(
+      contactSection.querySelectorAll<HTMLElement>("[data-contact-card]"),
+    );
+
+    if (!cards.length) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) {
+          return;
+        }
+
+        contactCardsAnimatedRef.current = true;
+
+        gsap.fromTo(
+          cards,
+          { autoAlpha: 0, y: 26 },
+          {
+            autoAlpha: 1,
+            y: 0,
+            duration: 0.6,
+            ease: "power3.out",
+            stagger: 0.12,
+            clearProps: "opacity,transform",
+          },
+        );
+
+        observer.disconnect();
+      },
+      { threshold: 0.2 },
+    );
+
+    observer.observe(contactSection);
+
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const steps = stepsRef.current;
@@ -1167,18 +1219,22 @@ export default function FamilyPurityApp() {
       ) : null}
 
       <div ref={contactSectionRef} className="grid gap-4 sm:grid-cols-2">
-        <ContactCard
-          actionLabel={CONTACTS.rabbi.cta}
-          name={CONTACTS.rabbi.name}
-          phone={CONTACTS.rabbi.phone}
-          role={CONTACTS.rabbi.role}
-        />
-        <ContactCard
-          actionLabel={CONTACTS.rebbetzin.cta}
-          name={CONTACTS.rebbetzin.name}
-          phone={CONTACTS.rebbetzin.phone}
-          role={CONTACTS.rebbetzin.role}
-        />
+        <div data-contact-card>
+          <ContactCard
+            actionLabel={CONTACTS.rabbi.cta}
+            name={CONTACTS.rabbi.name}
+            phone={CONTACTS.rabbi.phone}
+            role={CONTACTS.rabbi.role}
+          />
+        </div>
+        <div data-contact-card>
+          <ContactCard
+            actionLabel={CONTACTS.rebbetzin.cta}
+            name={CONTACTS.rebbetzin.name}
+            phone={CONTACTS.rebbetzin.phone}
+            role={CONTACTS.rebbetzin.role}
+          />
+        </div>
       </div>
 
       <OverlaySheet
