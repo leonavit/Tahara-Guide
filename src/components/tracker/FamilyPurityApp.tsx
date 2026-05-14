@@ -1038,6 +1038,19 @@ export default function FamilyPurityApp() {
                 ) : null}
               </div>
 
+              {!allPreparationsComplete ? (
+                <div
+                  className="flex flex-col items-center text-center lg:hidden"
+                  data-stage-item
+                >
+                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    סימון הכנות
+                  </span>
+                  <ArrowDown className="cta-arrow-bob mt-2 h-6 w-6 text-text-plum" />
+                  <p className="mt-2 text-sm text-slate-600">יש לבצע את ההכנות ולסמן כל סעיף.</p>
+                </div>
+              ) : null}
+
               <div ref={checklistRef} className="space-y-3" data-stage-item>
                 {tracker.mikvehChecklist.map((item) => {
                   const Icon = mikvehChecklistIcons[item.id] ?? Sparkles;
