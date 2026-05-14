@@ -1,6 +1,8 @@
 ---
 import FamilyPurityApp from "../components/tracker/FamilyPurityApp";
 import BaseLayout from "../layouts/BaseLayout.astro";
+
+const accessibilityHref = `${import.meta.env.BASE_URL}accessibility/`;
 ---
 
 <BaseLayout
@@ -14,7 +16,12 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <FamilyPurityApp client:only="react" />
 
       <footer class="pb-6 text-center text-sm text-slate-600">
-        בכל שאלה הלכתית יש לפנות לרב.
+        <p>בכל שאלה הלכתית יש לפנות לרב.</p>
+        <p class="mt-2">
+          <a class="font-semibold text-text-plum underline decoration-text-plum/40 underline-offset-4" href={accessibilityHref}>
+            הצהרת נגישות
+          </a>
+        </p>
       </footer>
     </div>
   </main>

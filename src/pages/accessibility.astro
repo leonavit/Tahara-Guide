@@ -1,0 +1,58 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const homeHref = import.meta.env.BASE_URL;
+const contactEmail = "studio@webme.co.il";
+---
+
+<BaseLayout
+  title="הצהרת נגישות | מדריך טהרת המשפחה"
+  description="הצהרת הנגישות של אתר מדריך טהרת המשפחה ופרטי אחראי הנגישות."
+>
+  <main class="relative overflow-hidden">
+    <div class="absolute inset-x-0 top-0 -z-10 h-[24rem] bg-soft-radial"></div>
+
+    <div class="mx-auto flex min-h-screen max-w-4xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
+      <section class="paper-shell overflow-hidden rounded-[2.75rem] border border-white/70 px-6 py-10 shadow-soft sm:px-8 sm:py-12">
+        <div class="mx-auto max-w-3xl text-right">
+          <a
+            class="inline-flex items-center rounded-full border border-white/80 bg-white/75 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white"
+            href={homeHref}
+          >
+            חזרה לאתר
+          </a>
+
+          <p class="mt-6 text-sm font-semibold text-text-plum">נגישות</p>
+          <h1 class="mt-2 font-heading text-4xl text-slate-900 sm:text-5xl">הצהרת נגישות</h1>
+          <p class="mt-4 text-base leading-8 text-slate-700 sm:text-lg">
+            אנו פועלים כדי לאפשר חוויית שימוש נוחה, מכבדת ונגישה ככל האפשר לכלל המשתמשים והמשתמשות,
+            לרבות אנשים עם מוגבלות.
+          </p>
+
+          <div class="mt-8 space-y-4 text-base leading-8 text-slate-700">
+            <p>
+              האתר כולל מבנה תוכן ברור, טפסים וכפתורים עם טקסט קריא, התאמה לניווט במובייל, ושימוש
+              בניגודיות וצבעים שנבחרו כדי לשפר קריאות ושימושיות.
+            </p>
+            <p>
+              אם נתקלתם ברכיב שאינו נגיש מספיק, בבעיה בשימוש עם מקלדת, קורא מסך או מכשיר נייד, נשמח
+              לקבל פנייה כדי לבדוק ולשפר.
+            </p>
+          </div>
+
+          <div class="mt-8 rounded-[2rem] border border-white/80 bg-white/80 p-6 shadow-soft">
+            <h2 class="font-heading text-2xl text-slate-900">פרטי אחראי נגישות</h2>
+            <p class="mt-4 text-base text-slate-700">
+              <span class="font-semibold text-slate-900">ליאון אטקינסון</span>
+            </p>
+            <p class="mt-2 text-base text-slate-700">
+              <a class="font-semibold text-text-plum underline decoration-text-plum/40 underline-offset-4" href={`mailto:${contactEmail}`}>
+                {contactEmail}
+              </a>
+            </p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</BaseLayout>
