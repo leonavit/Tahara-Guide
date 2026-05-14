@@ -1030,7 +1030,7 @@ export default function FamilyPurityApp() {
         ref={heroRef}
         className="paper-shell overflow-hidden rounded-[2.75rem] border border-white/70 px-6 py-10 shadow-soft sm:px-8 sm:py-12"
       >
-        <div className="mx-auto flex min-h-[68vh] max-w-4xl flex-col items-center justify-center">
+        <div className="mx-auto flex min-h-[68vh] max-w-4xl flex-col items-center justify-center lg:min-h-[40vh]">
           <div className="flex w-full max-w-3xl items-center justify-center gap-4 sm:gap-6">
             <div data-hero-bloom className="shrink-0">
               <CoverBloom className="hero-bloom w-[6.75rem] sm:w-[8rem]" />
