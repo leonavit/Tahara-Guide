@@ -6,5 +6,8 @@ const isGitHubPagesBuild = process.env.GITHUB_ACTIONS === "true";
 export default defineConfig({
   site: "https://leonavit.github.io",
   base: isGitHubPagesBuild ? "/Tahara-Guide" : "/",
+  devToolbar: {
+    enabled: false,
+  },
   integrations: [react()],
 });

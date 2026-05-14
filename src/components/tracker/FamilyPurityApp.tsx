@@ -24,6 +24,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import {
   PHASES,
   calculateCleanDayStart,
@@ -273,6 +274,16 @@ function downloadTrackerSummary(summaryText: string, tracker: TrackerState) {
 }
 
 type OverlaySheetKey = "intro" | "laws";
+type PhaseNavigationDirection = "back" | "next";
+type PhaseNavigationVariant = "ghost" | "primary";
+
+interface PhaseNavigationAction {
+  direction: PhaseNavigationDirection;
+  disabled?: boolean;
+  label: string;
+  onClick: () => void;
+  variant: PhaseNavigationVariant;
+}
 
 export default function FamilyPurityApp() {
   const tracker = useStore(trackerStore);
@@ -286,6 +297,8 @@ export default function FamilyPurityApp() {
   const previousPhaseRef = useRef<PhaseId | null>(null);
   const [activeOverlay, setActiveOverlay] = useState<OverlaySheetKey | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
+  const [isFloatingNavVisible, setIsFloatingNavVisible] = useState(false);
+  const [expandedFloatingDirection, setExpandedFloatingDirection] = useState<PhaseNavigationDirection | null>(null);
   const [isSharingSummary, setIsSharingSummary] = useState(false);
   const [shareSummaryMessage, setShareSummaryMessage] = useState<string | null>(null);
 
@@ -468,6 +481,33 @@ export default function FamilyPurityApp() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [activeOverlay]);
 
+  useEffect(() => {
+    if (!hasStarted || activeOverlay) {
+      setIsFloatingNavVisible(false);
+      return;
+    }
+
+    const updateFloatingNavVisibility = () => {
+      const hero = heroRef.current;
+
+      if (!hero) {
+        setIsFloatingNavVisible(false);
+        return;
+      }
+
+      setIsFloatingNavVisible(hero.getBoundingClientRect().bottom <= 24);
+    };
+
+    updateFloatingNavVisibility();
+    window.addEventListener("scroll", updateFloatingNavVisibility, { passive: true });
+    window.addEventListener("resize", updateFloatingNavVisibility);
+
+    return () => {
+      window.removeEventListener("scroll", updateFloatingNavVisibility);
+      window.removeEventListener("resize", updateFloatingNavVisibility);
+    };
+  }, [activeOverlay, hasStarted]);
+
   const earliestHefsekDate = tracker.periodStartDate
     ? calculateEarliestHefsekDate(tracker.periodStartDate)
     : "";
@@ -488,6 +528,12 @@ export default function FamilyPurityApp() {
       tracker.mikvehChecklist.some((item) => item.checked),
   );
 
+  useEffect(() => {
+    if (hasExistingProgress && !hasStarted) {
+      setHasStarted(true);
+    }
+  }, [hasExistingProgress, hasStarted]);
+
   const revealTracker = () => {
     if (hasStarted) {
       stepsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -495,6 +541,110 @@ export default function FamilyPurityApp() {
     }
 
     setHasStarted(true);
+  };
+  const phaseNavigationActions: PhaseNavigationAction[] = (() => {
+    switch (tracker.activePhase) {
+      case "period":
+        return [
+          {
+            direction: "next",
+            disabled: !tracker.periodStartDate,
+            label: "מעבר להפסק טהרה",
+            onClick: beginHefsekPhase,
+            variant: "primary",
+          },
+        ];
+      case "hefsek":
+        return [
+          {
+            direction: "next",
+            disabled: !tracker.hefsekConfirmed,
+            label: "פתיחת שבעה נקיים",
+            onClick: () => setActivePhase("clean-days"),
+            variant: "primary",
+          },
+          {
+            direction: "back",
+            label: "חזרה לימי הנדודים",
+            onClick: () => setActivePhase("period"),
+            variant: "ghost",
+          },
+        ];
+      case "clean-days":
+        return [
+          {
+            direction: "next",
+            disabled: !mikvehReady,
+            label: "מעבר לשלב הטבילה",
+            onClick: moveToMikvehPhase,
+            variant: "primary",
+          },
+          {
+            direction: "back",
+            label: "חזרה להפסק טהרה",
+            onClick: () => setActivePhase("hefsek"),
+            variant: "ghost",
+          },
+        ];
+      case "mikveh":
+        return [
+          {
+            direction: "back",
+            label: "חזרה לשבעה נקיים",
+            onClick: () => setActivePhase("clean-days"),
+            variant: "ghost",
+          },
+        ];
+    }
+  })();
+  const availableFloatingActions = phaseNavigationActions.filter((action) => !action.disabled);
+
+  const renderPhaseNavigation = () => {
+    if (!phaseNavigationActions.length) {
+      return null;
+    }
+
+    return (
+      <div className="mt-8 grid gap-3 sm:flex sm:flex-wrap" data-stage-item>
+        {phaseNavigationActions.map((action) => (
+          <PhaseNavigationButton key={`${tracker.activePhase}-${action.direction}`} action={action} />
+        ))}
+      </div>
+    );
+  };
+
+  const renderFloatingNavigation = () => {
+    if (!isFloatingNavVisible || !availableFloatingActions.length) {
+      return null;
+    }
+
+    const floatingNavigation = (
+      <div className="pointer-events-none fixed inset-x-0 bottom-5 z-[2147483647] overflow-visible px-4">
+        <div
+          className={[
+            "pointer-events-auto mx-auto flex max-w-7xl items-center px-1 sm:px-6 lg:px-8",
+            availableFloatingActions.length === 1 ? "justify-center" : "justify-between gap-3",
+          ].join(" ")}
+        >
+          {availableFloatingActions.map((action) => (
+            <FloatingNavigationButton
+              key={`floating-${tracker.activePhase}-${action.direction}`}
+              action={action}
+              expanded={expandedFloatingDirection === action.direction}
+              onExpandChange={(isExpanded) => {
+                setExpandedFloatingDirection(isExpanded ? action.direction : null);
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    );
+
+    if (typeof document === "undefined") {
+      return null;
+    }
+
+    return createPortal(floatingNavigation, document.body);
   };
 
   const handleShareSummary = async () => {
@@ -572,12 +722,7 @@ export default function FamilyPurityApp() {
               </div>
             </div>
 
-            <div className="mt-8 flex flex-wrap gap-3" data-stage-item>
-              <Button disabled={!tracker.periodStartDate} onClick={beginHefsekPhase}>
-                מעבר להפסק טהרה
-                <ArrowLeft className="nav-icon-next h-4 w-4 shrink-0" />
-              </Button>
-            </div>
+            {renderPhaseNavigation()}
           </Card>
         );
 
@@ -676,20 +821,7 @@ export default function FamilyPurityApp() {
               </div>
             </div>
 
-            <div className="mt-8 grid gap-3 sm:flex sm:flex-wrap" data-stage-item>
-              <Button
-                className="w-full sm:w-auto"
-                disabled={!tracker.hefsekConfirmed}
-                onClick={() => setActivePhase("clean-days")}
-              >
-                פתיחת שבעה נקיים
-                <ArrowLeft className="nav-icon-next h-4 w-4 shrink-0" />
-              </Button>
-              <Button className="w-full sm:w-auto" onClick={() => setActivePhase("period")} variant="ghost">
-                <ArrowRight className="nav-icon-back h-4 w-4 shrink-0" />
-                חזרה לימי הנדודים
-              </Button>
-            </div>
+            {renderPhaseNavigation()}
           </Card>
         );
 
@@ -706,7 +838,19 @@ export default function FamilyPurityApp() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 sm:gap-3" data-stage-item>
+              <div className="sm:hidden" data-stage-item>
+                <Card className="rounded-[1.7rem] !bg-[rgba(252,253,253,0.65)] px-4 py-2.5 text-center" tone="rose">
+                  <p className="text-[0.68rem] uppercase tracking-[0.12em] text-slate-500">ליל טבילה</p>
+                  <DualDateText
+                    containerClassName="text-center"
+                    date={tracker.mikvehNightDate}
+                    primaryClassName="mt-1 text-sm font-semibold text-slate-900"
+                    secondaryClassName="mt-1 text-xs text-text-plum/80"
+                  />
+                </Card>
+              </div>
+
+              <div className="hidden sm:grid sm:grid-cols-3 sm:gap-3" data-stage-item>
                 <Card className="bg-bg-stone/88 p-3 text-center sm:p-4" tone="stone">
                   <p className="text-[0.68rem] uppercase tracking-[0.12em] text-slate-500 sm:text-xs">
                     בדיקות שסומנו
@@ -803,6 +947,17 @@ export default function FamilyPurityApp() {
               ))}
             </div>
 
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:hidden" data-stage-item>
+              <Card className="rounded-[1.7rem] bg-bg-stone/88 px-3 py-3 text-center" tone="stone">
+                <p className="text-[0.68rem] uppercase tracking-[0.12em] text-slate-500">בדיקות שסומנו</p>
+                <p className="mt-1 text-lg font-semibold text-slate-900">{completedChecks}/14</p>
+              </Card>
+              <Card className="rounded-[1.7rem] bg-status-sage/55 px-3 py-3 text-center" tone="sage">
+                <p className="text-[0.68rem] uppercase tracking-[0.12em] text-slate-500">ימי חובה</p>
+                <p className="mt-1 text-lg font-semibold text-slate-900">{mandatoryCompleted}/3</p>
+              </Card>
+            </div>
+
             <div
               className="mt-6 rounded-3xl border border-brand-rose/45 bg-brand-blush/45 p-4 text-sm text-slate-700"
               data-stage-item
@@ -811,16 +966,7 @@ export default function FamilyPurityApp() {
               לתחילת מחזור חדש. בכל ספק הלכתי, מומלץ להתייעץ עם רב מלווה.
             </div>
 
-            <div className="mt-8 grid gap-3 sm:flex sm:flex-wrap" data-stage-item>
-              <Button className="w-full sm:w-auto" disabled={!mikvehReady} onClick={moveToMikvehPhase}>
-                מעבר לשלב הטבילה
-                <ArrowLeft className="nav-icon-next h-4 w-4 shrink-0" />
-              </Button>
-              <Button className="w-full sm:w-auto" onClick={() => setActivePhase("hefsek")} variant="ghost">
-                <ArrowRight className="nav-icon-back h-4 w-4 shrink-0" />
-                חזרה להפסק טהרה
-              </Button>
-            </div>
+            {renderPhaseNavigation()}
           </Card>
         );
 
@@ -935,12 +1081,7 @@ export default function FamilyPurityApp() {
               </div>
             ) : null}
 
-            <div className="mt-8 grid gap-3 sm:flex sm:flex-wrap" data-stage-item>
-              <Button className="w-full sm:w-auto" onClick={() => setActivePhase("clean-days")} variant="ghost">
-                <ArrowRight className="nav-icon-back h-4 w-4 shrink-0" />
-                חזרה לשבעה נקיים
-              </Button>
-            </div>
+            {renderPhaseNavigation()}
           </Card>
         );
     }
@@ -1070,6 +1211,8 @@ export default function FamilyPurityApp() {
               </Card>
             ) : null}
 
+            {renderFloatingNavigation()}
+
             <div ref={stageAnchorRef}>
               <StageContainer stageKey={tracker.activePhase}>{renderPhase()}</StageContainer>
             </div>
@@ -1142,6 +1285,102 @@ export default function FamilyPurityApp() {
         ) : null}
       </OverlaySheet>
     </section>
+  );
+}
+
+interface PhaseNavigationButtonProps {
+  action: PhaseNavigationAction;
+}
+
+function PhaseNavigationButton({ action }: PhaseNavigationButtonProps) {
+  return (
+    <Button
+      className="w-full sm:w-auto"
+      disabled={action.disabled}
+      onClick={action.onClick}
+      variant={action.variant}
+    >
+      {action.direction === "back" ? <ArrowRight className="nav-icon-back h-4 w-4 shrink-0" /> : null}
+      {action.label}
+      {action.direction === "next" ? <ArrowLeft className="nav-icon-next h-4 w-4 shrink-0" /> : null}
+    </Button>
+  );
+}
+
+interface FloatingNavigationButtonProps {
+  action: PhaseNavigationAction;
+  expanded: boolean;
+  onExpandChange: (isExpanded: boolean) => void;
+}
+
+function FloatingNavigationButton({
+  action,
+  expanded,
+  onExpandChange,
+}: FloatingNavigationButtonProps) {
+  const isBackAction = action.direction === "back";
+  const floatingToneClassName =
+    action.variant === "primary"
+      ? "bg-text-plum text-white shadow-blush hover:bg-[#7f616a] focus-visible:ring-text-plum border-transparent"
+      : "border border-white/80 bg-white/70 text-slate-700 hover:bg-white focus-visible:ring-brand-rose";
+  const labelClassName = [
+    "inline-block overflow-hidden whitespace-nowrap text-sm font-semibold transition-[max-width,opacity,margin] duration-300 ease-out",
+    expanded
+      ? isBackAction
+        ? "mr-2.5 max-w-[14rem] opacity-100"
+        : "ml-2.5 max-w-[14rem] opacity-100"
+      : "max-w-0 opacity-0",
+  ].join(" ");
+
+  return (
+    <button
+      aria-label={action.label}
+      className={[
+        "floating-phase-nav pointer-events-auto relative z-[2147483647] flex h-14 items-center rounded-full ring-1 ring-black/5 backdrop-blur-md transition-all duration-300 ease-out active:scale-[0.98]",
+        floatingToneClassName,
+        action.disabled ? "cursor-not-allowed opacity-45" : "cursor-pointer select-none hover:scale-[1.02]",
+        isBackAction ? "flex-row px-4" : "flex-row-reverse px-4",
+        expanded ? "min-w-[12.5rem]" : "w-14",
+      ].join(" ")}
+      disabled={action.disabled}
+      style={{ touchAction: "manipulation" }}
+      type="button"
+      onBlur={() => onExpandChange(false)}
+      onFocus={() => onExpandChange(true)}
+      onMouseDown={() => onExpandChange(true)}
+      onMouseEnter={() => onExpandChange(true)}
+      onMouseLeave={() => onExpandChange(false)}
+      onPointerDown={() => onExpandChange(true)}
+      onPointerEnter={() => onExpandChange(true)}
+      onPointerLeave={() => onExpandChange(false)}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        action.onClick();
+      }}
+    >
+      {isBackAction ? (
+        <>
+          <ArrowRight
+            className={[
+              "h-5 w-5 shrink-0 transition-transform duration-300 ease-out",
+              expanded ? "translate-x-1" : "",
+            ].join(" ")}
+          />
+          <span className={labelClassName}>{action.label}</span>
+        </>
+      ) : (
+        <>
+          <ArrowLeft
+            className={[
+              "h-5 w-5 shrink-0 transition-transform duration-300 ease-out",
+              expanded ? "-translate-x-1" : "",
+            ].join(" ")}
+          />
+          <span className={labelClassName}>{action.label}</span>
+        </>
+      )}
+    </button>
   );
 }
 

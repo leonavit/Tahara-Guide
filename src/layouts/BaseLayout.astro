@@ -13,6 +13,7 @@ const {
 
 const baseUrl = import.meta.env.BASE_URL;
 const assetBase = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
+const shouldRegisterServiceWorker = !import.meta.env.DEV;
 ---
 
 <!doctype html>
@@ -39,9 +40,21 @@ const assetBase = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
   </head>
   <body>
     <slot />
-    <script is:inline define:vars={{ assetBase }}>
+    <script is:inline define:vars={{ assetBase, shouldRegisterServiceWorker }}>
       if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
+        window.addEventListener("load", async () => {
+          if (!shouldRegisterServiceWorker) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(registrations.map((registration) => registration.unregister()));
+
+            if ("caches" in window) {
+              const cacheKeys = await window.caches.keys();
+              await Promise.all(cacheKeys.map((key) => window.caches.delete(key)));
+            }
+
+            return;
+          }
+
           navigator.serviceWorker.register(`${assetBase}sw.js`).catch(() => {
             // Ignore registration errors so the app still loads normally.
           });
