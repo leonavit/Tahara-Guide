@@ -112,6 +112,7 @@ const INTRO_NOTES = [
 
 const LAW_SECTIONS = [
   {
+    id: "laws-period",
     title: "ימי הנדודים",
     body: [
       "עם תחילת דימום הווסת מתחילים ימי הנדודים. תקופה זו נמשכת כל ימי הדימום, ולכל הפחות חמישה ימים.",
@@ -125,6 +126,7 @@ const LAW_SECTIONS = [
     ],
   },
   {
+    id: "laws-distance",
     title: "ריחוק שבונה קרבה",
     body: [
       "בימים אלו אסורים האיש והאישה בכל מגע, אפילו מגע שאינו של חיבה. נמנעים גם משינה במיטה אחת ומהושטה מיד ליד.",
@@ -132,6 +134,7 @@ const LAW_SECTIONS = [
     ],
   },
   {
+    id: "laws-guidance",
     title: "עשי, אל תעשי והמלצות",
     bullets: [
       "לאחר ראיית כתם בימי טהרה אין לבדוק מיד בעד בדיקה. יש להמתין ולהתייעץ עם הרב מתי נכון לבצע בדיקה.",
@@ -142,6 +145,7 @@ const LAW_SECTIONS = [
     ],
   },
   {
+    id: "laws-hefsek",
     title: "בדיקת הפסק טהרה",
     body: [
       "מטרת הבדיקה היא לוודא שהדימום הסתיים כדי שאפשר יהיה להתחיל לספור שבעה ימים נקיים. בד הבדיקה צריך לצאת נקי מדם.",
@@ -155,6 +159,7 @@ const LAW_SECTIONS = [
     ],
   },
   {
+    id: "laws-clean-days",
     title: "שבעה נקיים",
     body: [
       "למחרת היום בו נעשה הפסק טהרה מתחילה ספירת שבעה ימים נקיים, רצופים וללא דימום.",
@@ -168,6 +173,7 @@ const LAW_SECTIONS = [
     ],
   },
   {
+    id: "laws-mikveh-prep",
     title: "הכנות לטבילה",
     body: [
       "הטבילה היא השלב האחרון של תהליך הטהרה, ויש לעשותה בנחת ובשמחה. יום הטבילה חל באותו יום בשבוע שבו בוצע שבוע לפני כן הפסק הטהרה.",
@@ -182,6 +188,7 @@ const LAW_SECTIONS = [
     ],
   },
   {
+    id: "laws-mikveh-process",
     title: "דרך הטבילה ואחריה",
     body: [
       "במקוה נמצאת בלנית שתפקידה לסייע בהכנות ובטבילה עצמה. לאחר סיום ההכנות טובלים שתי טבילות על פי הסדר הנהוג במקוה.",
@@ -190,6 +197,7 @@ const LAW_SECTIONS = [
     ],
   },
   {
+    id: "laws-purity-days",
     title: "ימי הטהרה ועונות הפרישה",
     body: [
       "לאחר הטבילה מתחילה תקופה של ימי טהרה, שבה הקשר הגופני בין בני הזוג שב ונבנה מתוך חיבור ואהבה אמיתית.",
@@ -276,6 +284,15 @@ function downloadTrackerSummary(summaryText: string, tracker: TrackerState) {
 type OverlaySheetKey = "intro" | "laws";
 type PhaseNavigationDirection = "back" | "next";
 type PhaseNavigationVariant = "ghost" | "primary";
+type LawSectionId =
+  | "laws-period"
+  | "laws-distance"
+  | "laws-guidance"
+  | "laws-hefsek"
+  | "laws-clean-days"
+  | "laws-mikveh-prep"
+  | "laws-mikveh-process"
+  | "laws-purity-days";
 
 interface PhaseNavigationAction {
   direction: PhaseNavigationDirection;
@@ -284,6 +301,13 @@ interface PhaseNavigationAction {
   onClick: () => void;
   variant: PhaseNavigationVariant;
 }
+
+const PHASE_LAW_SECTION_IDS: Record<PhaseId, LawSectionId> = {
+  period: "laws-period",
+  hefsek: "laws-hefsek",
+  "clean-days": "laws-clean-days",
+  mikveh: "laws-mikveh-prep",
+};
 
 export default function FamilyPurityApp() {
   const tracker = useStore(trackerStore);
@@ -299,7 +323,9 @@ export default function FamilyPurityApp() {
   const [hasStarted, setHasStarted] = useState(false);
   const [isFloatingNavVisible, setIsFloatingNavVisible] = useState(false);
   const [expandedFloatingDirection, setExpandedFloatingDirection] = useState<PhaseNavigationDirection | null>(null);
+  const [canHoverExpandFloatingNav, setCanHoverExpandFloatingNav] = useState(false);
   const [isSharingSummary, setIsSharingSummary] = useState(false);
+  const [pendingLawAnchor, setPendingLawAnchor] = useState<{ id: LawSectionId; token: number } | null>(null);
   const [shareSummaryMessage, setShareSummaryMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -482,6 +508,27 @@ export default function FamilyPurityApp() {
   }, [activeOverlay]);
 
   useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const updateFloatingHoverCapability = () => {
+      setCanHoverExpandFloatingNav(mediaQuery.matches);
+    };
+
+    updateFloatingHoverCapability();
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", updateFloatingHoverCapability);
+      return () => mediaQuery.removeEventListener("change", updateFloatingHoverCapability);
+    }
+
+    mediaQuery.addListener(updateFloatingHoverCapability);
+    return () => mediaQuery.removeListener(updateFloatingHoverCapability);
+  }, []);
+
+  useEffect(() => {
     if (!hasStarted || activeOverlay) {
       setIsFloatingNavVisible(false);
       return;
@@ -507,6 +554,20 @@ export default function FamilyPurityApp() {
       window.removeEventListener("resize", updateFloatingNavVisibility);
     };
   }, [activeOverlay, hasStarted]);
+
+  useEffect(() => {
+    if (activeOverlay !== "laws" || !pendingLawAnchor || typeof window === "undefined") {
+      return;
+    }
+
+    const scrollTimeout = window.setTimeout(() => {
+      const targetSection = document.querySelector<HTMLElement>(`[data-law-section-id="${pendingLawAnchor.id}"]`);
+      targetSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+      setPendingLawAnchor(null);
+    }, 180);
+
+    return () => window.clearTimeout(scrollTimeout);
+  }, [activeOverlay, pendingLawAnchor]);
 
   const earliestHefsekDate = tracker.periodStartDate
     ? calculateEarliestHefsekDate(tracker.periodStartDate)
@@ -542,6 +603,15 @@ export default function FamilyPurityApp() {
 
     setHasStarted(true);
   };
+
+  const openPhaseLaws = (phaseId: PhaseId) => {
+    setPendingLawAnchor({
+      id: PHASE_LAW_SECTION_IDS[phaseId],
+      token: Date.now(),
+    });
+    setActiveOverlay("laws");
+  };
+
   const phaseNavigationActions: PhaseNavigationAction[] = (() => {
     switch (tracker.activePhase) {
       case "period":
@@ -619,7 +689,7 @@ export default function FamilyPurityApp() {
     }
 
     const floatingNavigation = (
-      <div className="pointer-events-none fixed inset-x-0 bottom-5 z-[2147483647] overflow-visible px-4">
+      <div className="pointer-events-none fixed inset-x-0 bottom-5 z-[2147483647] overflow-visible px-4 min-[1300px]:hidden">
         <div
           className={[
             "pointer-events-auto mx-auto flex max-w-7xl items-center px-1 sm:px-6 lg:px-8",
@@ -630,7 +700,11 @@ export default function FamilyPurityApp() {
             <FloatingNavigationButton
               key={`floating-${tracker.activePhase}-${action.direction}`}
               action={action}
-              expanded={expandedFloatingDirection === action.direction}
+              allowInteractiveExpand={canHoverExpandFloatingNav && action.direction !== "next"}
+              expanded={
+                action.direction === "next" ||
+                (canHoverExpandFloatingNav && expandedFloatingDirection === action.direction)
+              }
               onExpandChange={(isExpanded) => {
                 setExpandedFloatingDirection(isExpanded ? action.direction : null);
               }}
@@ -686,7 +760,7 @@ export default function FamilyPurityApp() {
         return (
           <Card className="stage-ornament overflow-hidden" tone="rose">
             <div className="max-w-4xl" data-stage-item>
-              <p className="text-sm font-semibold text-text-plum">שלב 1</p>
+              <StageEyebrow label="שלב 1" onLawsClick={() => openPhaseLaws("period")} />
               <h2 className="mt-2 font-heading text-3xl text-slate-900">ימי הנדודים</h2>
               <p className="mt-4 max-w-3xl text-slate-700">
                 בחרי את יום תחילת הדימום. מכאן המערכת מחשבת את היום המוקדם ביותר
@@ -729,9 +803,9 @@ export default function FamilyPurityApp() {
       case "hefsek":
         return (
           <Card className="stage-ornament overflow-hidden" tone="default">
-            <div className="grid gap-5 lg:grid-cols-[1.08fr_0.92fr]">
+            <div className="grid gap-5 lg:grid-cols-[1.08fr_0.92fr] lg:items-start">
               <div data-stage-item>
-                <p className="text-sm font-semibold text-text-plum">שלב 2</p>
+                <StageEyebrow label="שלב 2" onLawsClick={() => openPhaseLaws("hefsek")} />
                 <h2 className="mt-2 font-heading text-3xl text-slate-900">הפסק טהרה</h2>
                 <p className="mt-4 max-w-3xl text-slate-700">
                   בחרי את היום שבו פסק הדימום. הבדיקה נעשית סמוך לשקיעה, ורק לאחר
@@ -745,7 +819,7 @@ export default function FamilyPurityApp() {
                   onChange={setHefsekDate}
                 />
 
-                <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                <div className="mt-5 ml-auto grid max-w-xl gap-4 sm:grid-cols-2">
                   <Card className="bg-bg-stone/85" tone="stone">
                     <InfoLabel label="תחילת שבעה נקיים" />
                     {tracker.hefsekDate ? (
@@ -772,7 +846,7 @@ export default function FamilyPurityApp() {
                 </div>
               </div>
 
-              <div className="space-y-4" data-stage-item>
+              <div className="space-y-4 lg:pt-9" data-stage-item>
                 <p className="font-heading text-2xl text-text-plum">שלב הבדיקה</p>
                 <Card tone="stone">
                   <div className="inline-flex items-center gap-2">
@@ -830,7 +904,7 @@ export default function FamilyPurityApp() {
           <Card className="stage-ornament overflow-hidden" tone="default">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div data-stage-item>
-                <p className="text-sm font-semibold text-text-plum">שלב 3</p>
+                <StageEyebrow label="שלב 3" onLawsClick={() => openPhaseLaws("clean-days")} />
                 <h2 className="mt-2 font-heading text-3xl text-slate-900">שבעה נקיים</h2>
                 <p className="mt-3 max-w-3xl text-slate-700">
                   סמני בדיקות בוקר וערב לאורך שבעה ימים. ימים 1, 3 ו־7 מודגשים
@@ -975,7 +1049,7 @@ export default function FamilyPurityApp() {
           <Card className="stage-ornament overflow-hidden" tone="sage">
             <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
               <div data-stage-item>
-                <p className="text-sm font-semibold text-text-plum">שלב 4</p>
+                <StageEyebrow label="שלב 4" onLawsClick={() => openPhaseLaws("mikveh")} />
                 <h2 className="mt-2 font-heading text-3xl text-slate-900">טבילה</h2>
                 <p className="mt-4 max-w-2xl text-slate-700">
                   ליל הטבילה חל שבוע לאחר הפסק הטהרה, באותו יום בשבוע, והטבילה
@@ -1262,24 +1336,30 @@ export default function FamilyPurityApp() {
         ) : activeOverlay === "laws" ? (
           <div className="space-y-4">
             {LAW_SECTIONS.map((section) => (
-              <Card key={section.title} className="bg-white" tone="default">
-                <h3 className="font-heading text-2xl text-text-plum">{section.title}</h3>
-                <div className="mt-3 space-y-3 text-sm text-slate-700 sm:text-base">
-                  {(section.body ?? []).map((paragraph) => (
-                    <p key={paragraph}>{paragraph}</p>
-                  ))}
-                  {section.bullets ? (
-                    <ul className="space-y-2">
-                      {section.bullets.map((bullet) => (
-                        <li key={bullet} className="flex items-start gap-2">
-                          <span className="mt-1 text-text-plum">•</span>
-                          <span>{bullet}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
-                </div>
-              </Card>
+              <div
+                key={section.id}
+                className="scroll-mt-24"
+                data-law-section-id={section.id}
+              >
+                <Card className="bg-white" tone="default">
+                  <h3 className="font-heading text-2xl text-text-plum">{section.title}</h3>
+                  <div className="mt-3 space-y-3 text-sm text-slate-700 sm:text-base">
+                    {(section.body ?? []).map((paragraph) => (
+                      <p key={paragraph}>{paragraph}</p>
+                    ))}
+                    {section.bullets ? (
+                      <ul className="space-y-2">
+                        {section.bullets.map((bullet) => (
+                          <li key={bullet} className="flex items-start gap-2">
+                            <span className="mt-1 text-text-plum">•</span>
+                            <span>{bullet}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </div>
+                </Card>
+              </div>
             ))}
           </div>
         ) : null}
@@ -1290,6 +1370,27 @@ export default function FamilyPurityApp() {
 
 interface PhaseNavigationButtonProps {
   action: PhaseNavigationAction;
+}
+
+interface StageEyebrowProps {
+  label: string;
+  onLawsClick: () => void;
+}
+
+function StageEyebrow({ label, onLawsClick }: StageEyebrowProps) {
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <p className="text-sm font-semibold text-text-plum">{label}</p>
+      <Button
+        className="rounded-full bg-white/80 px-3 py-1.5 text-xs text-slate-700 shadow-none hover:bg-white"
+        onClick={onLawsClick}
+        size="sm"
+        variant="ghost"
+      >
+        הלכות
+      </Button>
+    </div>
+  );
 }
 
 function PhaseNavigationButton({ action }: PhaseNavigationButtonProps) {
@@ -1309,12 +1410,14 @@ function PhaseNavigationButton({ action }: PhaseNavigationButtonProps) {
 
 interface FloatingNavigationButtonProps {
   action: PhaseNavigationAction;
+  allowInteractiveExpand: boolean;
   expanded: boolean;
   onExpandChange: (isExpanded: boolean) => void;
 }
 
 function FloatingNavigationButton({
   action,
+  allowInteractiveExpand,
   expanded,
   onExpandChange,
 }: FloatingNavigationButtonProps) {
@@ -1338,7 +1441,11 @@ function FloatingNavigationButton({
       className={[
         "floating-phase-nav pointer-events-auto relative z-[2147483647] flex h-14 items-center rounded-full ring-1 ring-black/5 backdrop-blur-md transition-all duration-300 ease-out active:scale-[0.98]",
         floatingToneClassName,
-        action.disabled ? "cursor-not-allowed opacity-45" : "cursor-pointer select-none hover:scale-[1.02]",
+        action.disabled
+          ? "cursor-not-allowed opacity-45"
+          : allowInteractiveExpand
+            ? "cursor-pointer select-none hover:scale-[1.02]"
+            : "cursor-pointer select-none",
         isBackAction ? "flex-row px-4" : "flex-row-reverse px-4",
         expanded ? "min-w-[12.5rem]" : "w-14",
       ].join(" ")}
@@ -1346,13 +1453,41 @@ function FloatingNavigationButton({
       style={{ touchAction: "manipulation" }}
       type="button"
       onBlur={() => onExpandChange(false)}
-      onFocus={() => onExpandChange(true)}
-      onMouseDown={() => onExpandChange(true)}
-      onMouseEnter={() => onExpandChange(true)}
-      onMouseLeave={() => onExpandChange(false)}
-      onPointerDown={() => onExpandChange(true)}
-      onPointerEnter={() => onExpandChange(true)}
-      onPointerLeave={() => onExpandChange(false)}
+      onFocus={() => {
+        if (allowInteractiveExpand) {
+          onExpandChange(true);
+        }
+      }}
+      onMouseDown={() => {
+        if (allowInteractiveExpand) {
+          onExpandChange(true);
+        }
+      }}
+      onMouseEnter={() => {
+        if (allowInteractiveExpand) {
+          onExpandChange(true);
+        }
+      }}
+      onMouseLeave={() => {
+        if (allowInteractiveExpand) {
+          onExpandChange(false);
+        }
+      }}
+      onPointerDown={() => {
+        if (allowInteractiveExpand) {
+          onExpandChange(true);
+        }
+      }}
+      onPointerEnter={() => {
+        if (allowInteractiveExpand) {
+          onExpandChange(true);
+        }
+      }}
+      onPointerLeave={() => {
+        if (allowInteractiveExpand) {
+          onExpandChange(false);
+        }
+      }}
       onClick={(event) => {
         event.preventDefault();
         event.stopPropagation();
