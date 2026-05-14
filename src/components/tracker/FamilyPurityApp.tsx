@@ -1030,21 +1030,30 @@ export default function FamilyPurityApp() {
         ref={heroRef}
         className="paper-shell overflow-hidden rounded-[2.75rem] border border-white/70 px-6 py-10 shadow-soft sm:px-8 sm:py-12"
       >
-        <div className="mx-auto flex min-h-[68vh] max-w-4xl flex-col items-center justify-center text-center">
-          <p className="cover-title text-5xl text-text-plum sm:text-7xl">
-            <span data-hero-word>טהרת</span>{" "}
-            <span data-hero-word>המשפחה</span>
-          </p>
-          <p data-hero-line className="mt-3 text-lg text-text-plum/85 sm:text-2xl">
-            מדריך מעשי לציבור הכללי
-          </p>
-          <p data-hero-line className="cover-script mt-3 text-4xl text-text-plum sm:text-6xl">
-            פשוט להבין
-          </p>
+        <div className="mx-auto flex min-h-[68vh] max-w-4xl flex-col items-center justify-center">
+          <div className="flex w-full max-w-3xl items-center justify-center gap-4 sm:gap-6">
+            <div data-hero-bloom className="shrink-0">
+              <CoverBloom className="hero-bloom w-[6.75rem] sm:w-[8rem]" />
+            </div>
 
-          <div data-hero-bloom>
-            <CoverBloom className="hero-bloom mt-6 w-[10.5rem] sm:w-[12rem]" />
+            <div className="text-right">
+              <p className="cover-title text-4xl text-text-plum sm:text-6xl">
+                <span data-hero-word>טהרת</span>{" "}
+                <span data-hero-word>המשפחה</span>
+              </p>
+              <p data-hero-line className="mt-2 text-base text-text-plum/85 sm:text-xl">
+                מדריך מעשי לציבור הכללי
+              </p>
+            </div>
           </div>
+
+          <p
+            data-hero-line
+            className="mt-6 max-w-3xl text-center text-base font-normal leading-8 text-slate-700 sm:text-lg sm:leading-9"
+          >
+            כלי עזר אישי ופרטי למעקב אחר ימי הטהרה וההכנה לטבילה. פשוט נגיש ומלווה אותך צעד אחר צעד,
+            מהווסת ועד ליל הטבילה.
+          </p>
 
           <div className="mt-7 flex w-full max-w-3xl flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center">
             <Button data-hero-cta variant="ghost" onClick={() => setActiveOverlay("intro")}>
