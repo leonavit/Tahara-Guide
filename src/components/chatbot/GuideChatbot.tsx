@@ -204,25 +204,38 @@ function AssistantMessageCard({ resolution }: { resolution: ResolvedChatAnswer }
 }
 
 function ChatPanel({
+  autoFocusInput,
   messages,
   messagesContainerRef,
   onClose,
   onQuestionChange,
   onSubmitQuestion,
   question,
+  scrollAnchorMessageId,
 }: {
+  autoFocusInput: boolean;
   messages: ChatMessage[];
   messagesContainerRef: React.RefObject<HTMLDivElement | null>;
   onClose: () => void;
   onQuestionChange: (value: string) => void;
   onSubmitQuestion: (question: string) => void;
   question: string;
+  scrollAnchorMessageId: string | null;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const scrollAnchorRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+    if (autoFocusInput) {
+      inputRef.current?.focus();
+    }
+  }, [autoFocusInput]);
+
+  useEffect(() => {
+    if (scrollAnchorMessageId && scrollAnchorRef.current) {
+      scrollAnchorRef.current.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
+    }
+  }, [scrollAnchorMessageId, messages.length]);
 
   return (
     <div className="flex max-h-[min(34rem,calc(100vh-7rem))] w-[min(23rem,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-[2rem] border border-white/80 bg-bg-main/95 shadow-[0_28px_80px_-42px_rgba(73,41,51,0.45)] backdrop-blur-xl sm:w-[23rem]">
@@ -251,6 +264,7 @@ function ChatPanel({
               message.role === "user" ? (
                 <div
                   key={message.id}
+                  ref={message.id === scrollAnchorMessageId ? scrollAnchorRef : undefined}
                   className="mr-auto max-w-[85%] rounded-[1.6rem] bg-text-plum px-4 py-3 text-sm text-white shadow-blush"
                 >
                   {message.text}
@@ -305,7 +319,7 @@ function ChatPanel({
           </Button>
           <input
             ref={inputRef}
-            className="w-full rounded-full border border-white/75 bg-white/90 px-4 py-3 text-right text-sm text-slate-800 shadow-sm outline-none transition focus:border-brand-rose focus:ring-2 focus:ring-brand-rose/25"
+            className="w-full rounded-full border border-white/75 bg-white/90 px-4 py-3 text-right text-base text-slate-800 shadow-sm outline-none transition focus:border-brand-rose focus:ring-2 focus:ring-brand-rose/25 sm:text-sm"
             dir="rtl"
             placeholder="למשל: כמה בדיקות צריך בשבעה נקיים?"
             type="text"
@@ -324,6 +338,7 @@ export default function GuideChatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [scrollAnchorMessageId, setScrollAnchorMessageId] = useState<string | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
 
   const { context, floatingStyles, refs } = useFloating({
@@ -339,15 +354,6 @@ export default function GuideChatbot() {
   const role = useRole(context);
   const { getFloatingProps } = useInteractions([dismiss, role]);
 
-  useEffect(() => {
-    if (!isOpen || !messagesContainerRef.current) {
-      return;
-    }
-
-    const container = messagesContainerRef.current;
-    container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
-  }, [isOpen, messages]);
-
   function submitQuestion(rawQuestion: string) {
     const trimmedQuestion = rawQuestion.trim();
 
@@ -356,17 +362,20 @@ export default function GuideChatbot() {
     }
 
     const resolution = resolveChatAnswer(trimmedQuestion);
+    const userMessageId = createMessageId();
+    const assistantMessageId = createMessageId();
 
     setMessages((currentMessages) => [
       ...currentMessages,
-      { id: createMessageId(), role: "user", text: trimmedQuestion },
+      { id: userMessageId, role: "user", text: trimmedQuestion },
       {
-        id: createMessageId(),
+        id: assistantMessageId,
         role: "assistant",
         text: buildAssistantPreview(resolution),
         resolution,
       },
     ]);
+    setScrollAnchorMessageId(userMessageId);
     setQuestion("");
     setIsOpen(true);
   }
@@ -380,12 +389,14 @@ export default function GuideChatbot() {
             <Dialog.Content className="fixed inset-x-3 bottom-3 z-[2147483647] outline-none">
               <Dialog.Title className="sr-only">שאלי את המדריך</Dialog.Title>
               <ChatPanel
+                autoFocusInput={false}
                 messages={messages}
                 messagesContainerRef={messagesContainerRef}
                 onClose={() => setIsOpen(false)}
                 onQuestionChange={setQuestion}
                 onSubmitQuestion={submitQuestion}
                 question={question}
+                scrollAnchorMessageId={scrollAnchorMessageId}
               />
             </Dialog.Content>
           </Dialog.Portal>
@@ -402,12 +413,14 @@ export default function GuideChatbot() {
               className="z-[2147483647] outline-none"
             >
               <ChatPanel
+                autoFocusInput={true}
                 messages={messages}
                 messagesContainerRef={messagesContainerRef}
                 onClose={() => setIsOpen(false)}
                 onQuestionChange={setQuestion}
                 onSubmitQuestion={submitQuestion}
                 question={question}
+                scrollAnchorMessageId={scrollAnchorMessageId}
               />
             </div>
           </FloatingFocusManager>
@@ -419,12 +432,12 @@ export default function GuideChatbot() {
           ref={refs.setReference}
           aria-expanded={isOpen}
           aria-label="פתיחת צ׳ט הלכתי"
-          className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/92 px-4 py-3 text-sm font-semibold text-slate-800 shadow-soft backdrop-blur-md transition hover:bg-white"
+          className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/80 bg-white/92 p-0 text-sm font-semibold text-slate-800 shadow-soft backdrop-blur-md transition hover:bg-white sm:h-auto sm:w-auto sm:gap-2 sm:px-4 sm:py-3"
           type="button"
           onClick={() => setIsOpen((currentValue) => !currentValue)}
         >
-          <MessageCircle className="h-4 w-4 text-text-plum" />
-          <span>שאלי את המדריך</span>
+          <MessageCircle className="h-5 w-5 text-text-plum sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline">שאלי את המדריך</span>
         </button>
       </div>
     </>
