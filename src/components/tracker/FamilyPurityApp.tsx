@@ -1106,7 +1106,9 @@ export default function FamilyPurityApp() {
                     🙏
                   </span>
                   <h3 className="mt-3 max-w-lg font-heading text-3xl leading-snug text-text-plum">
-                    ״דָּרֵישׁ רַבִּי עֲקִיבָא: אִישׁ וְאִשָּׁה זָכוּ - שְׁכִינָה בֵּינֵיהֶן.״
+                    ״דָּרֵישׁ רַבִּי עֲקִיבָא:
+                    <br />
+                    אִישׁ וְאִשָּׁה זָכוּ - שְׁכִינָה בֵּינֵיהֶן.״
                     <span className="mt-1 block text-[12px] text-black">(סוטה י״ז א:ט״ו)</span>
                   </h3>
                   <div className="mt-5 flex w-full max-w-md flex-col items-center gap-3">
