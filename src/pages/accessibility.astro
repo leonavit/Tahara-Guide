@@ -4,7 +4,9 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 const homeHref = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
   : `${import.meta.env.BASE_URL}/`;
+const contactName = "ליאון אטקינסון";
 const contactEmail = "studio@webme.co.il";
+const contactPhone = "0454800430";
 ---
 
 <BaseLayout
@@ -27,30 +29,99 @@ const contactEmail = "studio@webme.co.il";
           <p class="mt-6 text-sm font-semibold text-text-plum">נגישות</p>
           <h1 class="mt-2 font-heading text-4xl text-slate-900 sm:text-5xl">הצהרת נגישות</h1>
           <p class="mt-4 text-base leading-8 text-slate-700 sm:text-lg">
-            אנו פועלים כדי לאפשר חוויית שימוש נוחה, מכבדת ונגישה ככל האפשר לכלל המשתמשים והמשתמשות,
-            לרבות אנשים עם מוגבלות.
+            אתר אינטרנט נגיש הוא אתר המאפשר לאנשים עם מוגבלות ולאנשים מבוגרים לגלוש באותה רמה של יעילות
+            והנאה ככל הגולשים מן המניין.
           </p>
 
           <div class="mt-8 space-y-4 text-base leading-8 text-slate-700">
             <p>
-              האתר כולל מבנה תוכן ברור, טפסים וכפתורים עם טקסט קריא, התאמה לניווט במובייל, ושימוש
-              בניגודיות וצבעים שנבחרו כדי לשפר קריאות ושימושיות.
+              כ- 20 עד 25 אחוזים מהאוכלוסיה נתקלים בקשיי שימוש באינטרנט ועשויים להיטיב מתכני אינטרנט
+              נגישים יותר, כך על פי מחקר שנערך בשנת 2003 ע״י חברת מייקרוסופט.
             </p>
             <p>
-              אם נתקלתם ברכיב שאינו נגיש מספיק, בבעיה בשימוש עם מקלדת, קורא מסך או מכשיר נייד, נשמח
-              לקבל פנייה כדי לבדוק ולשפר.
+              אנו מאמינים ופועלים למען שיוויון הזדמנויות במרחב האינטרנטי לבעלי לקויות מגוונות ו/או
+              המסתייעים בטכנולוגיות עזר לשימוש במחשבים.
+            </p>
+          </div>
+
+          <div class="mt-8 space-y-4 text-base leading-8 text-slate-700">
+            <h2 class="font-heading text-2xl text-slate-900">נגישות האתר</h2>
+            <p>
+              אתר זה עומד בדרישות תקנות שיוויון זכויות לאנשים עם מוגבלות (התאמות נגישות לשירות),
+              התשע״ג 2013.
+            </p>
+            <p>
+              האתר תואם את המלצות התקן הישראלי (ת״י 5568) לנגישות תכנים באינטרנט ברמת AA ואת המלצות מסמך
+              WCAG2.0 מאת ארגון W3C.
+            </p>
+            <p>כמו כן, מותאם לתצוגה בדפדפנים הנפוצים ולשימוש בטלפון הסלואלרי.</p>
+          </div>
+
+          <div class="mt-8 space-y-4 text-base leading-8 text-slate-700">
+            <h2 class="font-heading text-2xl text-slate-900">תיקונים שבוצעו באתר</h2>
+            <p>
+              באתר זה בוצעו התאמות נגישות קפדניות הכוללות בין היתר מימוש סמנטי ואינפורמטיבי עבור
+              טכנולוגיות מסייעות, קביעת ניווט והפעלה עם מקלדת בלבד עפ״י המלצות ארגון התקינה ברשת
+              הבינלאומי (W3C), התאמות צבעים וכן הוספת תוויות עזר והנחיות בטפסים לטובת כלל הגולשים.
+            </p>
+            <p>
+              כמו כן, לשם קבלת חווית גלישה מיטבית עם תוכנת הקראת מסך, אנו ממליצים לשימוש בתוכנת NVDA
+              העדכנית ביותר.
+            </p>
+          </div>
+
+          <div class="mt-8 space-y-4 text-base leading-8 text-slate-700">
+            <h2 class="font-heading text-2xl text-slate-900">חלק מהדברים שבוצעו באתר</h2>
+            <p>
+              הוספנו רכיב עזר נגישות, הרכיב מאפשר שליטה על גדלי פונטים, מעקף בלוקים, טקסטים מנחים לקורא
+              מסך מסוג nvda ו jaws, ניווט מקלדת המקלה על גלישה באתר ללא שימוש עכבר, התאמות לתאימות
+              ההאתר לגלישה עם קורא מסך מסוג nvda ו jaws, יצירת נוחות ל צפיה באתר בגווני שחור לבן/
+              ניגודיות צבעים, לחסום אנימציה וכל רכיב הזז באתר, להבליט קישורים.
+            </p>
+            <p>
+              לשם קבלת חווית גלישה מיטבית עם תוכנת הקראת מסך, אנו ממליצים על שימוש בתוכנת NVDA העדכנית
+              ביותר 2018.4.1.
+            </p>
+          </div>
+
+          <div class="mt-8 space-y-4 text-base leading-8 text-slate-700">
+            <p>
+              במידה ונדרש לכם מסמך המופיע באתר והוא אינו נגיש מספיק, אנא פנו אלינו עם קישור ספציפי
+              ונדאג לכך בהקדם.
+            </p>
+            <p>
+              במידה ומצאתם רכיב או עמוד שאינו נגיש באתר נשמח אם תיצרו אתנו קשר ונדאג לטפל בבעיה בהקדם
+              האפשרי.
             </p>
           </div>
 
           <div class="mt-8 rounded-[2rem] border border-white/80 bg-white/80 p-6 shadow-soft">
-            <h2 class="font-heading text-2xl text-slate-900">פרטי אחראי נגישות</h2>
-            <p class="mt-4 text-base text-slate-700">
-              <span class="font-semibold text-slate-900">ליאון אטקינסון</span>
+            <h2 class="font-heading text-2xl text-slate-900">יצירת קשר עם אחראי תחום הנגישות בחברתנו</h2>
+            <p class="mt-4 text-base leading-8 text-slate-700">
+              אם במהלך הגלישה באתר נתקלת בבעיה בנושא נגישות נשמח אם תדווחו לנו ואנחנו נדאג לתקן בהקדם.
             </p>
-            <p class="mt-2 text-base text-slate-700">
-              <a class="font-semibold text-text-plum underline decoration-text-plum/40 underline-offset-4" href={`mailto:${contactEmail}`}>
-                {contactEmail}
-              </a>
+
+            <div class="mt-6 space-y-3 text-base text-slate-700">
+              <p>
+                <span class="font-semibold text-slate-900">שם:</span>
+                <span class="mr-2">{contactName}</span>
+              </p>
+              <p>
+                <span class="font-semibold text-slate-900">אימייל:</span>
+                <a class="mr-2 font-semibold text-text-plum underline decoration-text-plum/40 underline-offset-4" href={`mailto:${contactEmail}`}>
+                  {contactEmail}
+                </a>
+              </p>
+              <p>
+                <span class="font-semibold text-slate-900">טלפון:</span>
+                <a class="mr-2 font-semibold text-text-plum underline decoration-text-plum/40 underline-offset-4" href={`tel:${contactPhone.replace(/-/g, "")}`}>
+                  {contactPhone}
+                </a>
+              </p>
+            </div>
+
+            <p class="mt-6 text-sm text-slate-500">
+              הצהרה זו עודכנה לאחרונה בתאריך 14.05.2026
             </p>
           </div>
         </div>
