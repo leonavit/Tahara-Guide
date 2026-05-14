@@ -291,13 +291,6 @@ function ChatPanel({
           </div>
         ) : (
           <div className="space-y-4 text-right">
-            <div className="rounded-[1.7rem] border border-white/75 bg-white/90 p-4 shadow-soft">
-              <p className="text-sm leading-7 text-slate-700">
-                אפשר לשאול כאן שאלות בסיסיות על התוכן שבאתר. אם אין התאמה ברורה, הצ׳ט לא ימציא תשובה ויציע לפנות
-                לרב או לרבנית.
-              </p>
-            </div>
-
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">שאלות מוצעות</p>
               <div className="mt-3 flex flex-wrap gap-2">

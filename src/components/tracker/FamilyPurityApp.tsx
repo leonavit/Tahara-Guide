@@ -185,6 +185,7 @@ export default function FamilyPurityApp() {
   const phaseRef = useRef<HTMLDivElement | null>(null);
   const stageAnchorRef = useRef<HTMLDivElement | null>(null);
   const contactSectionRef = useRef<HTMLDivElement | null>(null);
+  const hefsekSuccessButtonRef = useRef<HTMLButtonElement | null>(null);
   const phaseIconsAnimatedRef = useRef(false);
   const contactCardsAnimatedRef = useRef(false);
   const previousPhaseRef = useRef<PhaseId | null>(null);
@@ -360,6 +361,48 @@ export default function FamilyPurityApp() {
 
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    const button = hefsekSuccessButtonRef.current;
+
+    if (!button) {
+      return;
+    }
+
+    if (
+      tracker.activePhase !== "hefsek" ||
+      tracker.hefsekConfirmed ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      gsap.killTweensOf(button);
+      gsap.set(button, { clearProps: "transform" });
+      return;
+    }
+
+    gsap.set(button, { y: 0, scale: 1, transformOrigin: "50% 50%" });
+
+    const timeline = gsap.timeline({ repeat: -1, repeatDelay: 0.12 });
+    timeline
+      .to(button, {
+        y: -56,
+        scaleX: 0.955,
+        scaleY: 1.08,
+        duration: 0.18,
+        ease: "power1.inOut",
+      })
+      .to(button, {
+        y: 0,
+        scaleX: 1,
+        scaleY: 1,
+        duration: 0.82,
+        ease: "bounce.out",
+      });
+
+    return () => {
+      timeline.kill();
+      gsap.set(button, { clearProps: "transform" });
+    };
+  }, [tracker.activePhase, tracker.hefsekConfirmed]);
 
   useEffect(() => {
     const steps = stepsRef.current;
@@ -776,12 +819,13 @@ export default function FamilyPurityApp() {
                 </Card>
 
                 <button
+                  ref={hefsekSuccessButtonRef}
                   aria-checked={tracker.hefsekConfirmed}
                   className={[
                     "relative flex w-full items-start gap-4 rounded-[1.75rem] border-2 px-5 py-4 text-right transition duration-300",
                     tracker.hefsekConfirmed
                       ? "border-status-olive bg-status-sage/65"
-                      : "attention-pulse border-brand-rose/75 bg-white/88 shadow-blush hover:bg-white",
+                      : "border-brand-rose/75 bg-white/88 shadow-blush hover:bg-white",
                   ].join(" ")}
                   role="switch"
                   type="button"
