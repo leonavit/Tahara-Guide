@@ -1,5 +1,7 @@
 ---
+import GuideChatbot from "../components/chatbot/GuideChatbot";
 import FamilyPurityApp from "../components/tracker/FamilyPurityApp";
+import FamilyPuritySkeleton from "../components/tracker/FamilyPuritySkeleton.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 
 const baseHref = import.meta.env.BASE_URL.endsWith("/")
@@ -16,7 +18,9 @@ const accessibilityHref = `${baseHref}accessibility/`;
     <div class="absolute inset-x-0 top-0 -z-10 h-[34rem] bg-soft-radial"></div>
 
     <div class="mx-auto flex min-h-screen max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
-      <FamilyPurityApp client:only="react" />
+      <FamilyPurityApp client:only="react">
+        <FamilyPuritySkeleton slot="fallback" />
+      </FamilyPurityApp>
 
       <footer class="pb-6 text-center text-sm text-slate-600">
         <p>בכל שאלה הלכתית יש לפנות לרב.</p>
@@ -26,6 +30,8 @@ const accessibilityHref = `${baseHref}accessibility/`;
           </a>
         </p>
       </footer>
+
+      <GuideChatbot client:only="react" />
     </div>
   </main>
 </BaseLayout>
