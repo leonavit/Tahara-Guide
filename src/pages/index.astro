@@ -2,7 +2,10 @@
 import FamilyPurityApp from "../components/tracker/FamilyPurityApp";
 import BaseLayout from "../layouts/BaseLayout.astro";
 
-const accessibilityHref = `${import.meta.env.BASE_URL}accessibility/`;
+const baseHref = import.meta.env.BASE_URL.endsWith("/")
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`;
+const accessibilityHref = `${baseHref}accessibility/`;
 ---
 
 <BaseLayout

@@ -1,6 +1,7 @@
-const CACHE_NAME = "tahara-guide-v1";
+const CACHE_NAME = "tahara-guide-v2";
 const APP_SHELL = [
   "./",
+  "./accessibility/",
   "./manifest.webmanifest",
   "./pwa/icon.svg",
   "./pwa/icon-192.png",
