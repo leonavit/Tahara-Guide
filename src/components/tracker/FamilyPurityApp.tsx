@@ -448,6 +448,7 @@ export default function FamilyPurityApp() {
   const phaseRef = useRef<HTMLDivElement | null>(null);
   const stageAnchorRef = useRef<HTMLDivElement | null>(null);
   const contactSectionRef = useRef<HTMLDivElement | null>(null);
+  const pendingScrollToContactRef = useRef(false);
   const hefsekSuccessButtonRef = useRef<HTMLButtonElement | null>(null);
   const phaseIconsAnimatedRef = useRef(false);
   const contactCardsAnimatedRef = useRef(false);
@@ -462,10 +463,25 @@ export default function FamilyPurityApp() {
   const [isSharingSummary, setIsSharingSummary] = useState(false);
   const [pendingLawAnchor, setPendingLawAnchor] = useState<{ id: LawSectionId; token: number } | null>(null);
   const [shareSummaryMessage, setShareSummaryMessage] = useState<string | null>(null);
+  const [showContactSection, setShowContactSection] = useState(false);
 
   useEffect(() => {
     initializeTrackerStore();
   }, []);
+
+  useEffect(() => {
+    if (!showContactSection || !pendingScrollToContactRef.current) {
+      return;
+    }
+
+    pendingScrollToContactRef.current = false;
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        contactSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+      });
+    });
+  }, [showContactSection]);
 
   useLayoutEffect(() => {
     const hero = heroRef.current;
@@ -574,6 +590,10 @@ export default function FamilyPurityApp() {
   }, [hasStarted]);
 
   useEffect(() => {
+    if (!showContactSection) {
+      return;
+    }
+
     const contactSection = contactSectionRef.current;
 
     if (!contactSection || contactCardsAnimatedRef.current) {
@@ -622,7 +642,7 @@ export default function FamilyPurityApp() {
     observer.observe(contactSection);
 
     return () => observer.disconnect();
-  }, []);
+  }, [showContactSection]);
 
   useEffect(() => {
     const button = hefsekSuccessButtonRef.current;
@@ -1014,7 +1034,13 @@ export default function FamilyPurityApp() {
   };
 
   const scrollToContactSection = () => {
-    contactSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (showContactSection) {
+      contactSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+      return;
+    }
+
+    pendingScrollToContactRef.current = true;
+    setShowContactSection(true);
   };
 
   const renderPhase = () => {
@@ -1432,7 +1458,8 @@ export default function FamilyPurityApp() {
                 variant="ghost"
                 onClick={() => setActiveOverlay("intro")}
               >
-                הקדמה בקטנה
+                <span className="sm:hidden">הקדמה</span>
+                <span className="hidden sm:inline">הקדמה בקטנה</span>
                 <Info className="h-4 w-4 shrink-0" />
               </Button>
               <Button
@@ -1559,23 +1586,27 @@ export default function FamilyPurityApp() {
         </>
       ) : null}
 
-      <div ref={contactSectionRef} className="grid gap-4 sm:grid-cols-2">
-        <div data-contact-card>
-          <ContactCard
-            actionLabel={CONTACTS.rabbi.cta}
-            name={CONTACTS.rabbi.name}
-            phone={CONTACTS.rabbi.phone}
-            role={CONTACTS.rabbi.role}
-          />
-        </div>
-        <div data-contact-card>
-          <ContactCard
-            actionLabel={CONTACTS.rebbetzin.cta}
-            name={CONTACTS.rebbetzin.name}
-            phone={CONTACTS.rebbetzin.phone}
-            role={CONTACTS.rebbetzin.role}
-          />
-        </div>
+      <div ref={contactSectionRef} id="contact" className="scroll-mt-8">
+        {showContactSection ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div data-contact-card>
+              <ContactCard
+                actionLabel={CONTACTS.rabbi.cta}
+                name={CONTACTS.rabbi.name}
+                phone={CONTACTS.rabbi.phone}
+                role={CONTACTS.rabbi.role}
+              />
+            </div>
+            <div data-contact-card>
+              <ContactCard
+                actionLabel={CONTACTS.rebbetzin.cta}
+                name={CONTACTS.rebbetzin.name}
+                phone={CONTACTS.rebbetzin.phone}
+                role={CONTACTS.rebbetzin.role}
+              />
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <OverlaySheet
