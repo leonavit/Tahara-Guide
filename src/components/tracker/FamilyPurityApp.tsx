@@ -1290,14 +1290,14 @@ export default function FamilyPurityApp() {
         className="paper-shell overflow-hidden rounded-[2.75rem] border border-white/70 px-6 py-10 shadow-soft sm:px-8 sm:py-12"
       >
         <div className="mx-auto flex min-h-[68vh] max-w-4xl flex-col items-center justify-center lg:min-h-[40vh]">
-          <div className="flex w-full max-w-3xl items-center justify-center gap-4 sm:gap-6">
+          <div className="flex w-full max-w-3xl items-center justify-center gap-0">
             <div data-hero-bloom className="shrink-0">
               <CoverBloom className="hero-bloom w-[6.75rem] sm:w-[8rem]" />
             </div>
 
             <div className="text-right">
               <p
-                className="cover-title text-[1.65rem] text-text-plum sm:text-5xl lg:text-6xl"
+                className="cover-title text-[1.9rem] text-text-plum sm:text-5xl lg:text-6xl"
                 data-hero-title
               >
                 <span className="quote-line quote-line-hero block">{renderQuoteLine("טהרת המשפחה")}</span>
