@@ -85,8 +85,30 @@ body {
   .cover-title {
     font-family: var(--font-heading);
     letter-spacing: -0.02em;
-    line-height: 0.9;
+    line-height: 1.2;
     text-shadow: 0 10px 30px rgba(135, 86, 100, 0.16);
+  }
+
+  .stage-animated-title,
+  .cover-title {
+    overflow: visible;
+  }
+
+  .stage-animated-title .quote-line,
+  .cover-title .quote-line {
+    line-height: 1.35;
+    overflow: visible;
+    padding-block: 0.12em 0.22em;
+  }
+
+  .cover-title .quote-line-hero {
+    text-wrap: nowrap;
+  }
+
+  @media (min-width: 640px) {
+    .cover-title .quote-line-hero {
+      text-wrap: balance;
+    }
   }
 
   .cover-script {
@@ -335,7 +357,10 @@ body {
 
   .quote-letter {
     display: inline-block;
-    transform-origin: 50% 100%;
+    line-height: 1.45;
+    padding-bottom: 0.1em;
+    transform-origin: 50% 88%;
+    vertical-align: baseline;
     will-change: transform, opacity, filter;
   }
 

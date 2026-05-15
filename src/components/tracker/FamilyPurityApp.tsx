@@ -144,7 +144,7 @@ function setupLetterWaveReveal(
   }
 
   const setHiddenState = () => {
-    gsap.set(letters, { autoAlpha: 0, y: 24, display: "inline-block", transformOrigin: "50% 100%" });
+    gsap.set(letters, { autoAlpha: 0, y: 16, display: "inline-block", transformOrigin: "50% 88%" });
 
     if (followUp) {
       gsap.set(followUp, { autoAlpha: 0, y: 10 });
@@ -190,7 +190,7 @@ function setupLetterWaveReveal(
         letters,
         (index: number) => ({
           autoAlpha: 0,
-          y: 22 + Math.sin(index * 0.55) * 14,
+          y: 14 + Math.sin(index * 0.55) * 10,
           x: Math.cos(index * 0.4) * 4,
           rotateZ: -10 + Math.sin(index * 0.7) * 6,
           filter: "blur(8px)",
@@ -1096,7 +1096,7 @@ export default function FamilyPurityApp() {
                   width={60}
                 />
                 <div ref={cleanDaysSuccessRef} className="mx-auto mt-3 max-w-md px-1">
-                  <p className="font-heading text-[1.28rem] leading-snug text-text-plum sm:text-2xl">
+                  <p className="stage-animated-title font-heading text-[1.28rem] leading-[1.35] text-text-plum sm:text-2xl">
                     <span className="quote-line block">{renderQuoteLine(CLEAN_DAYS_SUCCESS_QUOTE)}</span>
                   </p>
                   <p className="mt-2 text-sm leading-relaxed text-slate-700" data-quote-followup>
@@ -1211,7 +1211,7 @@ export default function FamilyPurityApp() {
                 <div className="flex flex-col items-center text-center">
                   <h3
                     ref={mikvehQuoteRef}
-                    className="max-w-lg px-1 font-heading text-[1.28rem] leading-snug text-text-plum sm:text-[1.85rem]"
+                    className="stage-animated-title max-w-lg px-1 py-0.5 font-heading text-[1.28rem] leading-[1.35] text-text-plum sm:text-[1.85rem]"
                     data-mikveh-quote
                   >
                     {MIKVEH_QUOTE_LINES.map((line) => (
@@ -1264,10 +1264,10 @@ export default function FamilyPurityApp() {
 
             <div className="text-right">
               <p
-                className="cover-title text-4xl text-text-plum sm:text-6xl"
+                className="cover-title text-[1.65rem] text-text-plum sm:text-5xl lg:text-6xl"
                 data-hero-title
               >
-                <span className="quote-line block">{renderQuoteLine("טהרת המשפחה")}</span>
+                <span className="quote-line quote-line-hero block">{renderQuoteLine("טהרת המשפחה")}</span>
               </p>
               <p data-hero-line className="mt-2 text-base text-text-plum/85 sm:text-xl">
                 מדריך מעשי לציבור הכללי
@@ -2196,7 +2196,10 @@ function AnimatedStageTitle({ text }: { text: string }) {
   }, [text]);
 
   return (
-    <h2 ref={titleRef} className="mt-2 font-heading text-3xl text-slate-900">
+    <h2
+      ref={titleRef}
+      className="stage-animated-title mt-2 py-0.5 font-heading text-3xl leading-[1.35] text-slate-900"
+    >
       <span className="quote-line block">{renderQuoteLine(text)}</span>
     </h2>
   );
