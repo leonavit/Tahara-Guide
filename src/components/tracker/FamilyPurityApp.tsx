@@ -803,6 +803,29 @@ export default function FamilyPurityApp() {
   })();
   const availableFloatingActions = phaseNavigationActions.filter((action) => !action.disabled);
 
+  const renderMikvehReadyNote = (visibilityClass: string) => {
+    if (!allPreparationsComplete) {
+      return null;
+    }
+
+    return (
+      <div
+        className={["mikveh-ready-note mt-4", visibilityClass].filter(Boolean).join(" ")}
+        data-stage-item
+      >
+        <span
+          aria-hidden="true"
+          className="mikveh-ready-note__icon mx-auto flex h-9 w-9 items-center justify-center rounded-full bg-white/75 text-status-olive shadow-sm"
+        >
+          <CheckCircle2 className="h-5 w-5" strokeWidth={2.2} />
+        </span>
+        <p className="mt-2.5 text-center text-sm leading-relaxed text-slate-700">
+          כל ההכנות סומנו. מומלץ לבצע סקירה אחרונה סמוך ככל האפשר לטבילה.
+        </p>
+      </div>
+    );
+  };
+
   const renderPhaseNavigation = () => {
     if (!phaseNavigationActions.length) {
       return null;
@@ -892,7 +915,7 @@ export default function FamilyPurityApp() {
     switch (tracker.activePhase) {
       case "period":
         return (
-          <Card className="stage-ornament overflow-hidden" tone="rose">
+          <Card className="stage-ornament" tone="rose">
             <div className="max-w-4xl" data-stage-item>
               <StageEyebrow label="שלב 1" onLawsClick={() => openPhaseLaws("period")} />
               <AnimatedStageTitle text="ימי הנדודים" />
@@ -936,7 +959,7 @@ export default function FamilyPurityApp() {
 
       case "hefsek":
         return (
-          <Card className="stage-ornament overflow-hidden" tone="default">
+          <Card className="stage-ornament" tone="default">
             <div className="grid gap-5 lg:grid-cols-[1.08fr_0.92fr] lg:items-start">
               <div data-stage-item>
                 <StageEyebrow label="שלב 2" onLawsClick={() => openPhaseLaws("hefsek")} />
@@ -1036,7 +1059,7 @@ export default function FamilyPurityApp() {
 
       case "clean-days":
         return (
-          <Card className="stage-ornament overflow-hidden" tone="default">
+          <Card className="stage-ornament" tone="default">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div data-stage-item>
                 <StageEyebrow label="שלב 3" onLawsClick={() => openPhaseLaws("clean-days")} />
@@ -1124,7 +1147,7 @@ export default function FamilyPurityApp() {
 
       case "mikveh":
         return (
-          <Card className="stage-ornament overflow-hidden" tone="sage">
+          <Card className="stage-ornament" tone="sage">
             <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
               <div data-stage-item>
                 <StageEyebrow label="שלב 4" onLawsClick={() => openPhaseLaws("mikveh")} />
@@ -1150,11 +1173,7 @@ export default function FamilyPurityApp() {
                   </p>
                 </div>
 
-                {allPreparationsComplete ? (
-                  <p className="mikveh-ready-note mt-3 text-sm text-slate-700">
-                    כל ההכנות סומנו. מומלץ לבצע סקירה אחרונה סמוך ככל האפשר לטבילה.
-                  </p>
-                ) : null}
+                {renderMikvehReadyNote("hidden lg:block")}
               </div>
 
               {!allPreparationsComplete ? (
@@ -1213,6 +1232,8 @@ export default function FamilyPurityApp() {
                   );
                 })}
               </div>
+
+              {renderMikvehReadyNote("lg:hidden")}
             </div>
 
             {allPreparationsComplete ? (
@@ -1319,7 +1340,7 @@ export default function FamilyPurityApp() {
       {hasStarted ? (
         <>
           <div ref={stepsRef} style={{ opacity: 0 }}>
-            <Card className="stage-ornament overflow-hidden" tone="stone">
+            <Card className="stage-ornament" tone="stone">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                   <p className="text-sm font-semibold text-text-plum">אבני הדרך</p>
@@ -2208,10 +2229,7 @@ function AnimatedStageTitle({ text }: { text: string }) {
   }, [text]);
 
   return (
-    <h2
-      ref={titleRef}
-      className="stage-animated-title mt-2 py-0.5 font-heading text-3xl leading-[1.35] text-slate-900"
-    >
+    <h2 ref={titleRef} className="stage-animated-title mt-2 font-heading text-3xl text-slate-900">
       <span className="quote-line block">{renderQuoteLine(text)}</span>
     </h2>
   );

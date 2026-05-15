@@ -282,8 +282,27 @@ body {
 
   .stage-ornament {
     position: relative;
-    overflow: hidden;
+    overflow: visible;
     isolation: isolate;
+  }
+
+  .stage-animated-title {
+    line-height: 1.55;
+    overflow: visible;
+    padding-block: 0.3rem 0.7rem;
+  }
+
+  .stage-animated-title .quote-line {
+    line-height: 1.6;
+    min-height: 1.65em;
+    overflow: visible;
+    padding-block: 0.12em 0.5em;
+  }
+
+  .stage-animated-title .quote-letter {
+    line-height: 1.65;
+    padding-bottom: 0.16em;
+    overflow: visible;
   }
 
   .stage-ornament > * {
@@ -378,11 +397,12 @@ body {
       justify-content: flex-start;
       width: 100%;
       max-width: 100%;
+      min-height: 1.85em;
       overflow: visible;
       text-wrap: unset;
       white-space: nowrap;
-      line-height: 1.5;
-      padding-block: 0.14em 0.36em;
+      line-height: 1.65;
+      padding-block: 0.16em 0.55em;
     }
 
     .cover-title .quote-line-hero {
@@ -409,20 +429,51 @@ body {
     }
 
     .quote-letter {
-      line-height: 1.55;
-      padding-bottom: 0.14em;
+      line-height: 1.75;
+      padding-bottom: 0.2em;
       transform: translateZ(0);
       will-change: transform, opacity;
     }
 
-    .stage-animated-title,
+    .stage-animated-title {
+      -webkit-text-size-adjust: 100%;
+      line-height: 1.65;
+      padding-block: 0.35rem 0.85rem;
+    }
+
+    .stage-animated-title .quote-letter {
+      line-height: 1.8;
+      padding-bottom: 0.22em;
+    }
+
     .cover-title {
       -webkit-text-size-adjust: 100%;
       padding-bottom: 0.08em;
     }
   }
 
-  .mikveh-ready-note,
+  .mikveh-ready-note {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    border-radius: 1.5rem;
+    border: 1px solid rgba(143, 188, 156, 0.42);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(232, 246, 239, 0.88) 100%),
+      radial-gradient(circle at 50% 0%, rgba(207, 249, 228, 0.55), transparent 58%);
+    padding: 1rem 1.15rem 1.1rem;
+    text-align: center;
+    animation: mikveh-ready-appear 0.55s ease-out;
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.65) inset,
+      0 10px 28px rgba(120, 190, 150, 0.14);
+  }
+
+  .mikveh-ready-note > * {
+    position: relative;
+    z-index: 1;
+  }
+
   .clean-days-complete-note {
     position: relative;
     overflow: hidden;
