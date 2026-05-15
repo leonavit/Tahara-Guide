@@ -38,6 +38,7 @@ import {
   getUnlockedPhases,
   type CheckSlot,
   type CheckStatus,
+  type CleanDayEntry,
   type PhaseId,
   type TrackerState,
 } from "../../lib/tracker";
@@ -104,6 +105,8 @@ const MIKVEH_QUOTE_LINES = [
   "אִישׁ וְאִשָּׁה זָכוּ - שְׁכִינָה בֵּינֵיהֶן.״",
 ] as const;
 
+const CLEAN_DAYS_SUCCESS_QUOTE = "״אַשְׁרַיִךְ!, סִיַּמְתְּ אֶת הַבְּדִיקוֹת״";
+
 function formatShareSummaryDate(dateString: string) {
   if (!dateString) {
     return "—";
@@ -126,6 +129,155 @@ function formatCleanDaysShareStatus(tracker: TrackerState) {
 
 function formatShareSummaryLine(label: string, value: string) {
   return `✅ *${label}:* ${value}`;
+}
+
+function setupLetterWaveReveal(
+  root: HTMLElement,
+  options?: { immediate?: boolean; replay?: boolean },
+) {
+  const letters = gsap.utils.toArray<HTMLElement>("[data-quote-letter]", root);
+  const followUp = root.querySelector<HTMLElement>("[data-quote-citation], [data-quote-followup]");
+  const replay = options?.replay ?? false;
+
+  if (!letters.length) {
+    return () => {};
+  }
+
+  const setHiddenState = () => {
+    gsap.set(letters, { autoAlpha: 0, y: 24, display: "inline-block", transformOrigin: "50% 100%" });
+
+    if (followUp) {
+      gsap.set(followUp, { autoAlpha: 0, y: 10 });
+    }
+  };
+
+  setHiddenState();
+
+  if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    gsap.set(letters, { autoAlpha: 1, y: 0, x: 0, rotateZ: 0, filter: "blur(0px)", scale: 1 });
+    if (followUp) {
+      gsap.set(followUp, { autoAlpha: 1, y: 0 });
+    }
+    return () => {};
+  }
+
+  let animationContext: gsap.Context | null = null;
+  let hasStarted = false;
+  let isInView = false;
+
+  const resetAnimation = () => {
+    animationContext?.revert();
+    animationContext = null;
+    setHiddenState();
+
+    if (replay) {
+      hasStarted = false;
+    }
+  };
+
+  const playAnimation = () => {
+    if (!replay && hasStarted) {
+      return;
+    }
+
+    animationContext?.revert();
+    animationContext = null;
+    setHiddenState();
+    hasStarted = true;
+
+    animationContext = gsap.context(() => {
+      gsap.fromTo(
+        letters,
+        (index: number) => ({
+          autoAlpha: 0,
+          y: 22 + Math.sin(index * 0.55) * 14,
+          x: Math.cos(index * 0.4) * 4,
+          rotateZ: -10 + Math.sin(index * 0.7) * 6,
+          filter: "blur(8px)",
+          scale: 0.9,
+        }),
+        {
+          autoAlpha: 1,
+          y: 0,
+          x: 0,
+          rotateZ: 0,
+          filter: "blur(0px)",
+          scale: 1,
+          duration: 0.62,
+          ease: "power3.out",
+          stagger: {
+            each: 0.038,
+            ease: "sine.inOut",
+          },
+        },
+      );
+
+      if (followUp) {
+        gsap.to(followUp, {
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.55,
+          ease: "power2.out",
+          delay: letters.length * 0.038 + 0.18,
+        });
+      }
+    }, root);
+  };
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      const entry = entries[0];
+
+      if (!entry) {
+        return;
+      }
+
+      if (entry.isIntersecting) {
+        if (!isInView) {
+          isInView = true;
+          playAnimation();
+        }
+
+        if (!replay) {
+          observer.disconnect();
+        }
+      } else if (replay && isInView) {
+        isInView = false;
+        resetAnimation();
+      }
+    },
+    { threshold: 0.2, rootMargin: "0px 0px -5% 0px" },
+  );
+
+  if (options?.immediate) {
+    playAnimation();
+
+    return () => {
+      animationContext?.revert();
+    };
+  }
+
+  observer.observe(root);
+
+  const revealFrame = window.requestAnimationFrame(() => {
+    const rect = root.getBoundingClientRect();
+    const isVisible = rect.top < window.innerHeight * 0.92 && rect.bottom > window.innerHeight * 0.08;
+
+    if (isVisible && !isInView) {
+      isInView = true;
+      playAnimation();
+
+      if (!replay) {
+        observer.disconnect();
+      }
+    }
+  });
+
+  return () => {
+    window.cancelAnimationFrame(revealFrame);
+    observer.disconnect();
+    animationContext?.revert();
+  };
 }
 
 function buildTrackerSummary(tracker: TrackerState) {
@@ -182,7 +334,7 @@ export default function FamilyPurityApp() {
   const phaseIconsAnimatedRef = useRef(false);
   const contactCardsAnimatedRef = useRef(false);
   const mikvehQuoteRef = useRef<HTMLHeadingElement | null>(null);
-  const mikvehQuoteAnimatedRef = useRef(false);
+  const cleanDaysSuccessRef = useRef<HTMLDivElement | null>(null);
   const previousPhaseRef = useRef<PhaseId | null>(null);
   const [activeOverlay, setActiveOverlay] = useState<OverlaySheetKey | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
@@ -204,30 +356,24 @@ export default function FamilyPurityApp() {
       return;
     }
 
+    const titleRoot = hero.querySelector<HTMLElement>("[data-hero-title]");
+    const titleCleanup = titleRoot ? setupLetterWaveReveal(titleRoot, { immediate: true }) : () => {};
+
     const ctx = gsap.context(() => {
-      const words = gsap.utils.toArray<HTMLElement>("[data-hero-word]");
       const lines = gsap.utils.toArray<HTMLElement>("[data-hero-line]");
       const bloom = hero.querySelector("[data-hero-bloom]");
       const ctas = gsap.utils.toArray<HTMLElement>("[data-hero-cta]");
 
-      gsap.set(words, { display: "inline-block", transformOrigin: "50% 100%" });
-
       const timeline = gsap.timeline({
         defaults: { ease: "power4.out" },
+        delay: 0.18,
       });
-
-      timeline.fromTo(
-        words,
-        { autoAlpha: 0, yPercent: 120, rotateX: -68, filter: "blur(14px)" },
-        { autoAlpha: 1, yPercent: 0, rotateX: 0, filter: "blur(0px)", duration: 1, stagger: 0.12 },
-      );
 
       if (lines.length) {
         timeline.fromTo(
           lines,
           { autoAlpha: 0, y: 24, filter: "blur(10px)" },
           { autoAlpha: 1, y: 0, filter: "blur(0px)", duration: 0.72, stagger: 0.12 },
-          "-=0.46",
         );
       }
 
@@ -250,7 +396,10 @@ export default function FamilyPurityApp() {
       }
     }, hero);
 
-    return () => ctx.revert();
+    return () => {
+      titleCleanup();
+      ctx.revert();
+    };
   }, []);
 
   useEffect(() => {
@@ -542,106 +691,18 @@ export default function FamilyPurityApp() {
       return;
     }
 
-    const letters = gsap.utils.toArray<HTMLElement>("[data-quote-letter]", quoteRoot);
-    const citation = quoteRoot.querySelector<HTMLElement>("[data-quote-citation]");
-
-    if (!letters.length) {
-      return;
-    }
-
-    gsap.set(letters, { autoAlpha: 0, y: 24, display: "inline-block", transformOrigin: "50% 100%" });
-
-    if (citation) {
-      gsap.set(citation, { autoAlpha: 0, y: 10 });
-    }
-
-    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      gsap.set(letters, { autoAlpha: 1, y: 0, x: 0, rotateZ: 0, filter: "blur(0px)", scale: 1 });
-      if (citation) {
-        gsap.set(citation, { autoAlpha: 1, y: 0 });
-      }
-      return;
-    }
-
-    let animationContext: gsap.Context | null = null;
-    let hasStarted = false;
-
-    const playQuoteAnimation = () => {
-      if (hasStarted) {
-        return;
-      }
-
-      hasStarted = true;
-      mikvehQuoteAnimatedRef.current = true;
-
-      animationContext = gsap.context(() => {
-        gsap.fromTo(
-          letters,
-          (index: number) => ({
-            autoAlpha: 0,
-            y: 22 + Math.sin(index * 0.55) * 14,
-            x: Math.cos(index * 0.4) * 4,
-            rotateZ: -10 + Math.sin(index * 0.7) * 6,
-            filter: "blur(8px)",
-            scale: 0.9,
-          }),
-          {
-            autoAlpha: 1,
-            y: 0,
-            x: 0,
-            rotateZ: 0,
-            filter: "blur(0px)",
-            scale: 1,
-            duration: 0.62,
-            ease: "power3.out",
-            stagger: {
-              each: 0.038,
-              ease: "sine.inOut",
-            },
-          },
-        );
-
-        if (citation) {
-          gsap.to(citation, {
-            autoAlpha: 1,
-            y: 0,
-            duration: 0.55,
-            ease: "power2.out",
-            delay: letters.length * 0.038 + 0.18,
-          });
-        }
-      }, quoteRoot);
-    };
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) {
-          playQuoteAnimation();
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.2, rootMargin: "0px 0px -5% 0px" },
-    );
-
-    observer.observe(quoteRoot);
-
-    const revealFrame = window.requestAnimationFrame(() => {
-      const rect = quoteRoot.getBoundingClientRect();
-      const isVisible = rect.top < window.innerHeight * 0.92 && rect.bottom > window.innerHeight * 0.08;
-
-      if (isVisible) {
-        playQuoteAnimation();
-        observer.disconnect();
-      }
-    });
-
-    return () => {
-      window.cancelAnimationFrame(revealFrame);
-      observer.disconnect();
-      animationContext?.revert();
-      mikvehQuoteAnimatedRef.current = false;
-    };
+    return setupLetterWaveReveal(quoteRoot, { replay: true });
   }, [allPreparationsComplete, tracker.activePhase]);
+
+  useEffect(() => {
+    const successRoot = cleanDaysSuccessRef.current;
+
+    if (!mikvehReady || !successRoot || tracker.activePhase !== "clean-days") {
+      return;
+    }
+
+    return setupLetterWaveReveal(successRoot, { replay: true });
+  }, [mikvehReady, tracker.activePhase]);
   const activePhase = PHASES.find((phase) => phase.id === tracker.activePhase) ?? PHASES[0];
   const hasExistingProgress = Boolean(
     tracker.periodStartDate ||
@@ -822,7 +883,7 @@ export default function FamilyPurityApp() {
           <Card className="stage-ornament overflow-hidden" tone="rose">
             <div className="max-w-4xl" data-stage-item>
               <StageEyebrow label="שלב 1" onLawsClick={() => openPhaseLaws("period")} />
-              <h2 className="mt-2 font-heading text-3xl text-slate-900">ימי הנדודים</h2>
+              <AnimatedStageTitle text="ימי הנדודים" />
               <p className="mt-4 max-w-3xl text-slate-700">
                 בחרי את יום תחילת הדימום. מכאן המערכת מחשבת את היום המוקדם ביותר
                 להפסק טהרה, לפי מינימום של חמישה ימים מתחילת הראייה.
@@ -867,7 +928,7 @@ export default function FamilyPurityApp() {
             <div className="grid gap-5 lg:grid-cols-[1.08fr_0.92fr] lg:items-start">
               <div data-stage-item>
                 <StageEyebrow label="שלב 2" onLawsClick={() => openPhaseLaws("hefsek")} />
-                <h2 className="mt-2 font-heading text-3xl text-slate-900">הפסק טהרה</h2>
+                <AnimatedStageTitle text="הפסק טהרה" />
                 <p className="mt-4 max-w-3xl text-slate-700">
                   בחרי את היום שבו פסק הדימום. הבדיקה נעשית סמוך לשקיעה, ורק לאחר
                   שהבדיקה יצאה נקייה אפשר לפתוח את שבעת הימים הנקיים.
@@ -967,7 +1028,7 @@ export default function FamilyPurityApp() {
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div data-stage-item>
                 <StageEyebrow label="שלב 3" onLawsClick={() => openPhaseLaws("clean-days")} />
-                <h2 className="mt-2 font-heading text-3xl text-slate-900">שבעה נקיים</h2>
+                <AnimatedStageTitle text="שבעה נקיים" />
                 <p className="mt-3 max-w-3xl text-slate-700">
                   סמני בדיקות בוקר וערב לאורך שבעה ימים. ימים 1, 3 ו־7 מודגשים
                   כימי חובה מינימליים.
@@ -986,113 +1047,34 @@ export default function FamilyPurityApp() {
                 </Card>
               </div>
 
-              <div className="hidden sm:grid sm:grid-cols-3 sm:gap-3" data-stage-item>
-                <Card className="bg-bg-stone/88 p-3 text-center sm:p-4" tone="stone">
-                  <p className="text-[0.68rem] uppercase tracking-[0.12em] text-slate-500 sm:text-xs">
-                    בדיקות שסומנו
-                  </p>
-                  <p className="mt-1 text-lg font-semibold text-slate-900 sm:mt-2 sm:text-2xl">
-                    {completedChecks}/14
-                  </p>
-                </Card>
-                <Card className="bg-status-sage/55 p-3 text-center sm:p-4" tone="sage">
-                  <p className="text-[0.68rem] uppercase tracking-[0.12em] text-slate-500 sm:text-xs">
-                    ימי חובה
-                  </p>
-                  <p className="mt-1 text-lg font-semibold text-slate-900 sm:mt-2 sm:text-2xl">
-                    {mandatoryCompleted}/3
-                  </p>
-                </Card>
-                <Card className="bg-brand-blush/55 p-3 text-center sm:p-4" tone="rose">
+              <div className="hidden sm:block sm:max-w-xs lg:shrink-0" data-stage-item>
+                <Card className="rounded-[1.7rem] bg-brand-blush/55 px-4 py-3 text-center sm:px-5 sm:py-4" tone="rose">
                   <p className="text-[0.68rem] uppercase tracking-[0.12em] text-slate-500 sm:text-xs">
                     ליל טבילה
                   </p>
                   <DualDateText
                     containerClassName="text-center"
                     date={tracker.mikvehNightDate}
-                    primaryClassName="mt-1 text-xs font-semibold text-slate-900 sm:mt-2 sm:text-sm"
+                    primaryClassName="mt-1 text-sm font-semibold text-slate-900 sm:mt-2 sm:text-base"
                     secondaryClassName="mt-1 text-[0.68rem] text-text-plum/80 sm:text-xs"
                   />
                 </Card>
               </div>
             </div>
 
-            <div className="mt-6 grid gap-4 xl:grid-cols-2" data-stage-item>
-              {tracker.cleanDays.map((day) => (
-                <Card
-                  key={day.dayNumber}
-                  className={[
-                    "border-white/75 bg-white/78",
-                    day.mandatory ? "ring-1 ring-brand-rose/35" : "",
-                  ].join(" ")}
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <p className="text-lg font-semibold text-slate-900">יום {day.dayNumber}</p>
-                      <DualDateText
-                        date={day.date}
-                        primaryClassName="text-sm text-slate-600"
-                        secondaryClassName="mt-0.5 text-xs text-text-plum/80"
-                      />
-                    </div>
-                    {day.mandatory ? (
-                      <span className="rounded-full bg-brand-blush px-3 py-1 text-sm font-semibold text-text-plum">
-                        חובה מינימלית
-                      </span>
-                    ) : null}
-                  </div>
-
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <CheckSlotControl
-                      label="בדיקת בוקר"
-                      slot="morning"
-                      status={day.morning}
-                      onBlood={() => setCleanDayStatus(day.dayNumber, "morning", "blood")}
-                      onToggle={() =>
-                        setCleanDayStatus(
-                          day.dayNumber,
-                          "morning",
-                          day.morning === "done" ? "pending" : "done",
-                        )
-                      }
-                    />
-                    <CheckSlotControl
-                      label="בדיקת ערב"
-                      slot="evening"
-                      status={day.evening}
-                      onBlood={() => setCleanDayStatus(day.dayNumber, "evening", "blood")}
-                      onToggle={() =>
-                        setCleanDayStatus(
-                          day.dayNumber,
-                          "evening",
-                          day.evening === "done" ? "pending" : "done",
-                        )
-                      }
-                    />
-                  </div>
-
-                  {day.mandatory ? (
-                    <p className="mt-4 text-sm text-slate-600">
-                      מצב יום חובה:{" "}
-                      <span className="font-semibold text-slate-900">
-                        {dayHasMandatoryCompletion(day) ? "הושלם" : "נדרשת לפחות בדיקה אחת"}
-                      </span>
-                    </p>
-                  ) : null}
-                </Card>
-              ))}
-            </div>
-
-            <div className="mt-4 grid grid-cols-2 gap-2 sm:hidden" data-stage-item>
-              <Card className="rounded-[1.7rem] bg-bg-stone/88 px-3 py-3 text-center" tone="stone">
-                <p className="text-[0.68rem] uppercase tracking-[0.12em] text-slate-500">בדיקות שסומנו</p>
-                <p className="mt-1 text-lg font-semibold text-slate-900">{completedChecks}/14</p>
-              </Card>
-              <Card className="rounded-[1.7rem] bg-status-sage/55 px-3 py-3 text-center" tone="sage">
-                <p className="text-[0.68rem] uppercase tracking-[0.12em] text-slate-500">ימי חובה</p>
-                <p className="mt-1 text-lg font-semibold text-slate-900">{mandatoryCompleted}/3</p>
-              </Card>
-            </div>
+            <CleanDaysBoard
+              cleanDays={tracker.cleanDays}
+              completedChecks={completedChecks}
+              mandatoryCompleted={mandatoryCompleted}
+              onEveningBlood={(dayNumber) => setCleanDayStatus(dayNumber, "evening", "blood")}
+              onEveningToggle={(dayNumber, evening) =>
+                setCleanDayStatus(dayNumber, "evening", evening === "done" ? "pending" : "done")
+              }
+              onMorningBlood={(dayNumber) => setCleanDayStatus(dayNumber, "morning", "blood")}
+              onMorningToggle={(dayNumber, morning) =>
+                setCleanDayStatus(dayNumber, "morning", morning === "done" ? "pending" : "done")
+              }
+            />
 
             <div
               className="mt-6 hidden rounded-3xl border border-brand-rose/45 bg-brand-blush/45 p-4 text-sm text-slate-700 sm:block"
@@ -1103,7 +1085,7 @@ export default function FamilyPurityApp() {
 
             {mikvehReady ? (
               <div
-                className="clean-days-complete-note mt-6 rounded-3xl border border-status-olive/45 bg-[#e8f6ef]/90 p-5 text-center sm:hidden"
+                className="clean-days-complete-note mt-6 rounded-3xl border border-status-olive/45 bg-[#e8f6ef]/90 p-5 text-center"
                 data-stage-item
               >
                 <img
@@ -1113,10 +1095,14 @@ export default function FamilyPurityApp() {
                   src={PRAYER_ILLUSTRATION_SRC}
                   width={60}
                 />
-                <p className="mt-3 font-heading text-2xl leading-snug text-text-plum">אשריך סיימת את הבדיקות</p>
-                <p className="mt-2 text-sm leading-relaxed text-slate-700">
-                  לחצי לשלב הבא והאחרון - הטבילה
-                </p>
+                <div ref={cleanDaysSuccessRef} className="mx-auto mt-3 max-w-md px-1">
+                  <p className="font-heading text-[1.28rem] leading-snug text-text-plum sm:text-2xl">
+                    <span className="quote-line block">{renderQuoteLine(CLEAN_DAYS_SUCCESS_QUOTE)}</span>
+                  </p>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-700" data-quote-followup>
+                    לחצי לשלב הבא והאחרון - הטבילה
+                  </p>
+                </div>
               </div>
             ) : null}
 
@@ -1130,7 +1116,7 @@ export default function FamilyPurityApp() {
             <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
               <div data-stage-item>
                 <StageEyebrow label="שלב 4" onLawsClick={() => openPhaseLaws("mikveh")} />
-                <h2 className="mt-2 font-heading text-3xl text-slate-900">טבילה</h2>
+                <AnimatedStageTitle text="טבילה" />
                 <p className="mt-4 max-w-2xl text-slate-700">
                   ליל הטבילה חל שבוע לאחר הפסק הטהרה, באותו יום בשבוע, והטבילה
                   עצמה היא בלילה אחרי צאת הכוכבים.
@@ -1277,9 +1263,11 @@ export default function FamilyPurityApp() {
             </div>
 
             <div className="text-right">
-              <p className="cover-title text-4xl text-text-plum sm:text-6xl">
-                <span data-hero-word>טהרת</span>{" "}
-                <span data-hero-word>המשפחה</span>
+              <p
+                className="cover-title text-4xl text-text-plum sm:text-6xl"
+                data-hero-title
+              >
+                <span className="quote-line block">{renderQuoteLine("טהרת המשפחה")}</span>
               </p>
               <p data-hero-line className="mt-2 text-base text-text-plum/85 sm:text-xl">
                 מדריך מעשי לציבור הכללי
@@ -1650,6 +1638,30 @@ interface CheckSlotControlProps {
   onToggle: () => void;
 }
 
+interface CleanDayCardProps {
+  day: CleanDayEntry;
+  onEveningBlood: () => void;
+  onEveningToggle: () => void;
+  onMorningBlood: () => void;
+  onMorningToggle: () => void;
+}
+
+interface CleanDaysStatsBlockProps {
+  completedChecks: number;
+  mandatoryCompleted: number;
+  variant?: "compact" | "desktop";
+}
+
+interface CleanDaysBoardProps {
+  cleanDays: CleanDayEntry[];
+  completedChecks: number;
+  mandatoryCompleted: number;
+  onEveningBlood: (dayNumber: number) => void;
+  onEveningToggle: (dayNumber: number, evening: CheckStatus) => void;
+  onMorningBlood: (dayNumber: number) => void;
+  onMorningToggle: (dayNumber: number, morning: CheckStatus) => void;
+}
+
 interface DateInputFieldProps {
   label: string;
   min?: string;
@@ -1927,6 +1939,177 @@ function WhatsAppIcon({ className = "" }: { className?: string }) {
   );
 }
 
+function CleanDayCard({
+  day,
+  onEveningBlood,
+  onEveningToggle,
+  onMorningBlood,
+  onMorningToggle,
+}: CleanDayCardProps) {
+  return (
+    <Card
+      className={[
+        "border-white/75 bg-white/78",
+        day.mandatory ? "ring-1 ring-brand-rose/35" : "",
+      ].join(" ")}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-lg font-semibold text-slate-900">יום {day.dayNumber}</p>
+          <DualDateText
+            date={day.date}
+            primaryClassName="text-sm text-slate-600"
+            secondaryClassName="mt-0.5 text-xs text-text-plum/80"
+          />
+        </div>
+        {day.mandatory ? (
+          <span className="rounded-full bg-brand-blush px-3 py-1 text-sm font-semibold text-text-plum">
+            חובה מינימלית
+          </span>
+        ) : null}
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <CheckSlotControl
+          label="בדיקת בוקר"
+          slot="morning"
+          status={day.morning}
+          onBlood={onMorningBlood}
+          onToggle={onMorningToggle}
+        />
+        <CheckSlotControl
+          label="בדיקת ערב"
+          slot="evening"
+          status={day.evening}
+          onBlood={onEveningBlood}
+          onToggle={onEveningToggle}
+        />
+      </div>
+
+      {day.mandatory ? (
+        <p className="mt-4 text-sm text-slate-600">
+          מצב יום חובה:{" "}
+          <span className="font-semibold text-slate-900">
+            {dayHasMandatoryCompletion(day) ? "הושלם" : "נדרשת לפחות בדיקה אחת"}
+          </span>
+        </p>
+      ) : null}
+    </Card>
+  );
+}
+
+function CleanDaysStatsBlock({
+  completedChecks,
+  mandatoryCompleted,
+  variant = "compact",
+}: CleanDaysStatsBlockProps) {
+  const isDesktop = variant === "desktop";
+
+  return (
+    <div
+      className={[
+        "grid gap-3",
+        isDesktop ? "h-full grid-cols-1" : "grid-cols-2 gap-2",
+      ].join(" ")}
+    >
+      <Card
+        className={[
+          "rounded-[1.7rem] bg-bg-stone/88 text-center",
+          isDesktop ? "flex min-h-[7.5rem] flex-col justify-center px-4 py-4" : "px-3 py-3",
+        ].join(" ")}
+        tone="stone"
+      >
+        <p
+          className={[
+            "uppercase tracking-[0.12em] text-slate-500",
+            isDesktop ? "text-xs" : "text-[0.68rem]",
+          ].join(" ")}
+        >
+          בדיקות שסומנו
+        </p>
+        <p
+          className={[
+            "mt-1 font-semibold text-slate-900",
+            isDesktop ? "text-2xl" : "text-lg",
+          ].join(" ")}
+        >
+          {completedChecks}/14
+        </p>
+      </Card>
+      <Card
+        className={[
+          "rounded-[1.7rem] bg-status-sage/55 text-center",
+          isDesktop ? "flex min-h-[7.5rem] flex-col justify-center px-4 py-4" : "px-3 py-3",
+        ].join(" ")}
+        tone="sage"
+      >
+        <p
+          className={[
+            "uppercase tracking-[0.12em] text-slate-500",
+            isDesktop ? "text-xs" : "text-[0.68rem]",
+          ].join(" ")}
+        >
+          ימי חובה
+        </p>
+        <p
+          className={[
+            "mt-1 font-semibold text-slate-900",
+            isDesktop ? "text-2xl" : "text-lg",
+          ].join(" ")}
+        >
+          {mandatoryCompleted}/3
+        </p>
+      </Card>
+    </div>
+  );
+}
+
+function CleanDaysBoard({
+  cleanDays,
+  completedChecks,
+  mandatoryCompleted,
+  onEveningBlood,
+  onEveningToggle,
+  onMorningBlood,
+  onMorningToggle,
+}: CleanDaysBoardProps) {
+  const seventhCleanDay = cleanDays.find((day) => day.dayNumber === 7);
+  const cleanDaysExceptSeven = cleanDays.filter((day) => day.dayNumber !== 7);
+
+  const renderDay = (day: CleanDayEntry) => (
+    <CleanDayCard
+      key={day.dayNumber}
+      day={day}
+      onEveningBlood={() => onEveningBlood(day.dayNumber)}
+      onEveningToggle={() => onEveningToggle(day.dayNumber, day.evening)}
+      onMorningBlood={() => onMorningBlood(day.dayNumber)}
+      onMorningToggle={() => onMorningToggle(day.dayNumber, day.morning)}
+    />
+  );
+
+  return (
+    <div className="mt-6" data-stage-item>
+      <div className="grid gap-4 lg:hidden">
+        {cleanDays.map(renderDay)}
+        <CleanDaysStatsBlock
+          completedChecks={completedChecks}
+          mandatoryCompleted={mandatoryCompleted}
+        />
+      </div>
+
+      <div className="hidden gap-4 lg:grid lg:grid-cols-2 lg:items-stretch">
+        {cleanDaysExceptSeven.map(renderDay)}
+        {seventhCleanDay ? renderDay(seventhCleanDay) : null}
+        <CleanDaysStatsBlock
+          completedChecks={completedChecks}
+          mandatoryCompleted={mandatoryCompleted}
+          variant="desktop"
+        />
+      </div>
+    </div>
+  );
+}
+
 function CheckSlotControl({
   label,
   slot,
@@ -1997,6 +2180,26 @@ function renderQuoteLine(line: string) {
       </span>
     );
   });
+}
+
+function AnimatedStageTitle({ text }: { text: string }) {
+  const titleRef = useRef<HTMLHeadingElement>(null);
+
+  useLayoutEffect(() => {
+    const root = titleRef.current;
+
+    if (!root) {
+      return;
+    }
+
+    return setupLetterWaveReveal(root, { replay: true });
+  }, [text]);
+
+  return (
+    <h2 ref={titleRef} className="mt-2 font-heading text-3xl text-slate-900">
+      <span className="quote-line block">{renderQuoteLine(text)}</span>
+    </h2>
+  );
 }
 
 function CoverBloom({ className = "" }: { className?: string }) {
