@@ -91,60 +91,53 @@ const dateFieldDisplayClass =
 
 const dateInputClass = "native-date-input absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0";
 
-const summaryTimestampFormatter = new Intl.DateTimeFormat("he-IL", {
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-});
+const CLEAN_DAYS_BLOOD_NOTICE =
+  'סימון "מראה דמי" מאפס את הספירה לצורך זהירות ומחזיר את המעקב לתחילת מחזור חדש. בכל ספק הלכתי, מומלץ להתייעץ עם רב מלווה.';
 
-function formatSummaryDate(dateString: string) {
+const prayerIllustrationBase = import.meta.env.BASE_URL.endsWith("/")
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`;
+const PRAYER_ILLUSTRATION_SRC = `${prayerIllustrationBase}images/prayer-illustration.png`;
+
+const MIKVEH_QUOTE_LINES = [
+  "״דָּרֵישׁ רַבִּי עֲקִיבָא:",
+  "אִישׁ וְאִשָּׁה זָכוּ - שְׁכִינָה בֵּינֵיהֶן.״",
+] as const;
+
+function formatShareSummaryDate(dateString: string) {
   if (!dateString) {
-    return "טרם נבחר";
+    return "—";
   }
 
-  const hebrewDate = formatHebrewDate(dateString);
-
-  return hebrewDate ? `${formatDisplayDate(dateString)} | ${hebrewDate}` : formatDisplayDate(dateString);
+  return formatDisplayDate(dateString);
 }
 
-function formatCheckStatusLabel(status: CheckStatus) {
-  return status === "done" ? "סומנה" : "טרם סומנה";
+function formatCleanDaysShareStatus(tracker: TrackerState) {
+  if (canEnterMikvehPhase(tracker)) {
+    return "תקין";
+  }
+
+  if (tracker.cleanDays.length > 0) {
+    return "בתהליך";
+  }
+
+  return "—";
+}
+
+function formatShareSummaryLine(label: string, value: string) {
+  return `✅ *${label}:* ${value}`;
 }
 
 function buildTrackerSummary(tracker: TrackerState) {
-  const lines = [
-    "סיכום תהליך טהרת המשפחה",
-    "",
-    `תאריך תחילת הדימום: ${formatSummaryDate(tracker.periodStartDate)}`,
-    `יום הפסק טהרה: ${formatSummaryDate(tracker.hefsekDate)}`,
-    `סימון שהבדיקה הצליחה: ${tracker.hefsekConfirmed ? "סומן" : "טרם סומן"}`,
-    `תחילת שבעה נקיים: ${formatSummaryDate(tracker.hefsekDate ? calculateCleanDayStart(tracker.hefsekDate) : "")}`,
-    `ליל הטבילה: ${formatSummaryDate(tracker.mikvehNightDate)}`,
-  ];
+  const cleanDayStart = tracker.hefsekDate ? calculateCleanDayStart(tracker.hefsekDate) : "";
 
-  if (tracker.cleanDays.length) {
-    lines.push("", "שבעה נקיים");
-    tracker.cleanDays.forEach((day) => {
-      lines.push(
-        `יום ${day.dayNumber}: ${formatSummaryDate(day.date)} | בדיקת בוקר: ${formatCheckStatusLabel(day.morning)} | בדיקת ערב: ${formatCheckStatusLabel(day.evening)}${day.mandatory ? " | יום חובה" : ""}`,
-      );
-    });
-  }
-
-  if (tracker.mikvehChecklist.length) {
-    lines.push("", "הכנות לטבילה");
-    tracker.mikvehChecklist.forEach((item) => {
-      lines.push(`- ${item.label}: ${item.checked ? "סומן" : "טרם סומן"}`);
-    });
-  }
-
-  if (tracker.lastUpdatedAt) {
-    lines.push("", `עודכן לאחרונה: ${summaryTimestampFormatter.format(new Date(tracker.lastUpdatedAt))}`);
-  }
-
-  return lines.join("\n");
+  return [
+    formatShareSummaryLine("תאריך תחילת דימום", formatShareSummaryDate(tracker.periodStartDate)),
+    formatShareSummaryLine("תאריך הפסק טהרה", formatShareSummaryDate(tracker.hefsekDate)),
+    formatShareSummaryLine("תאריך תחילת שבעה נקיים", formatShareSummaryDate(cleanDayStart)),
+    formatShareSummaryLine("שבעה נקיים", formatCleanDaysShareStatus(tracker)),
+    formatShareSummaryLine("תאריך ליל הטבילה", formatShareSummaryDate(tracker.mikvehNightDate)),
+  ].join("\n");
 }
 
 function downloadTrackerSummary(summaryText: string, tracker: TrackerState) {
@@ -158,7 +151,7 @@ function downloadTrackerSummary(summaryText: string, tracker: TrackerState) {
   const link = document.createElement("a");
 
   link.href = url;
-  link.download = `tahara-process-summary-${datePart}.txt`;
+  link.download = `tahara-monthly-check-summary-${datePart}.txt`;
   document.body.append(link);
   link.click();
   link.remove();
@@ -188,6 +181,8 @@ export default function FamilyPurityApp() {
   const hefsekSuccessButtonRef = useRef<HTMLButtonElement | null>(null);
   const phaseIconsAnimatedRef = useRef(false);
   const contactCardsAnimatedRef = useRef(false);
+  const mikvehQuoteRef = useRef<HTMLHeadingElement | null>(null);
+  const mikvehQuoteAnimatedRef = useRef(false);
   const previousPhaseRef = useRef<PhaseId | null>(null);
   const [activeOverlay, setActiveOverlay] = useState<OverlaySheetKey | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
@@ -539,6 +534,114 @@ export default function FamilyPurityApp() {
   const allPreparationsComplete =
     tracker.mikvehChecklist.length > 0 &&
     tracker.mikvehChecklist.every((item) => item.checked);
+
+  useEffect(() => {
+    const quoteRoot = mikvehQuoteRef.current;
+
+    if (!allPreparationsComplete || !quoteRoot || tracker.activePhase !== "mikveh") {
+      return;
+    }
+
+    const letters = gsap.utils.toArray<HTMLElement>("[data-quote-letter]", quoteRoot);
+    const citation = quoteRoot.querySelector<HTMLElement>("[data-quote-citation]");
+
+    if (!letters.length) {
+      return;
+    }
+
+    gsap.set(letters, { autoAlpha: 0, y: 24, display: "inline-block", transformOrigin: "50% 100%" });
+
+    if (citation) {
+      gsap.set(citation, { autoAlpha: 0, y: 10 });
+    }
+
+    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      gsap.set(letters, { autoAlpha: 1, y: 0, x: 0, rotateZ: 0, filter: "blur(0px)", scale: 1 });
+      if (citation) {
+        gsap.set(citation, { autoAlpha: 1, y: 0 });
+      }
+      return;
+    }
+
+    let animationContext: gsap.Context | null = null;
+    let hasStarted = false;
+
+    const playQuoteAnimation = () => {
+      if (hasStarted) {
+        return;
+      }
+
+      hasStarted = true;
+      mikvehQuoteAnimatedRef.current = true;
+
+      animationContext = gsap.context(() => {
+        gsap.fromTo(
+          letters,
+          (index: number) => ({
+            autoAlpha: 0,
+            y: 22 + Math.sin(index * 0.55) * 14,
+            x: Math.cos(index * 0.4) * 4,
+            rotateZ: -10 + Math.sin(index * 0.7) * 6,
+            filter: "blur(8px)",
+            scale: 0.9,
+          }),
+          {
+            autoAlpha: 1,
+            y: 0,
+            x: 0,
+            rotateZ: 0,
+            filter: "blur(0px)",
+            scale: 1,
+            duration: 0.62,
+            ease: "power3.out",
+            stagger: {
+              each: 0.038,
+              ease: "sine.inOut",
+            },
+          },
+        );
+
+        if (citation) {
+          gsap.to(citation, {
+            autoAlpha: 1,
+            y: 0,
+            duration: 0.55,
+            ease: "power2.out",
+            delay: letters.length * 0.038 + 0.18,
+          });
+        }
+      }, quoteRoot);
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          playQuoteAnimation();
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.2, rootMargin: "0px 0px -5% 0px" },
+    );
+
+    observer.observe(quoteRoot);
+
+    const revealFrame = window.requestAnimationFrame(() => {
+      const rect = quoteRoot.getBoundingClientRect();
+      const isVisible = rect.top < window.innerHeight * 0.92 && rect.bottom > window.innerHeight * 0.08;
+
+      if (isVisible) {
+        playQuoteAnimation();
+        observer.disconnect();
+      }
+    });
+
+    return () => {
+      window.cancelAnimationFrame(revealFrame);
+      observer.disconnect();
+      animationContext?.revert();
+      mikvehQuoteAnimatedRef.current = false;
+    };
+  }, [allPreparationsComplete, tracker.activePhase]);
   const activePhase = PHASES.find((phase) => phase.id === tracker.activePhase) ?? PHASES[0];
   const hasExistingProgress = Boolean(
     tracker.periodStartDate ||
@@ -687,22 +790,22 @@ export default function FamilyPurityApp() {
       if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
         setIsSharingSummary(true);
         await navigator.share({
-          title: "סיכום תהליך טהרת המשפחה",
+          title: "סיכום בדיקה חודשית",
           text: summaryText,
         });
-        setShareSummaryMessage("חלון השיתוף נפתח עם סיכום התהליך.");
+        setShareSummaryMessage("חלון השיתוף נפתח עם סיכום הבדיקה החודשית.");
         return;
       }
 
       downloadTrackerSummary(summaryText, tracker);
-      setShareSummaryMessage("נוצר קובץ סיכום לשמירה במכשיר.");
+      setShareSummaryMessage("נוצר קובץ סיכום בדיקה חודשית לשמירה במכשיר.");
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
         return;
       }
 
       downloadTrackerSummary(summaryText, tracker);
-      setShareSummaryMessage("לא נפתח חלון שיתוף, לכן נוצר קובץ סיכום לשמירה.");
+      setShareSummaryMessage("לא נפתח חלון שיתוף, לכן נוצר קובץ סיכום בדיקה חודשית לשמירה.");
     } finally {
       setIsSharingSummary(false);
     }
@@ -992,12 +1095,30 @@ export default function FamilyPurityApp() {
             </div>
 
             <div
-              className="mt-6 rounded-3xl border border-brand-rose/45 bg-brand-blush/45 p-4 text-sm text-slate-700"
+              className="mt-6 hidden rounded-3xl border border-brand-rose/45 bg-brand-blush/45 p-4 text-sm text-slate-700 sm:block"
               data-stage-item
             >
-              סימון &quot;מראה דמי&quot; מאפס את הספירה לצורך זהירות ומחזיר את המעקב
-              לתחילת מחזור חדש. בכל ספק הלכתי, מומלץ להתייעץ עם רב מלווה.
+              {CLEAN_DAYS_BLOOD_NOTICE}
             </div>
+
+            {mikvehReady ? (
+              <div
+                className="clean-days-complete-note mt-6 rounded-3xl border border-status-olive/45 bg-[#e8f6ef]/90 p-5 text-center sm:hidden"
+                data-stage-item
+              >
+                <img
+                  alt=""
+                  aria-hidden="true"
+                  className="prayer-illustration mx-auto h-auto w-[60px]"
+                  src={PRAYER_ILLUSTRATION_SRC}
+                  width={60}
+                />
+                <p className="mt-3 font-heading text-2xl leading-snug text-text-plum">אשריך סיימת את הבדיקות</p>
+                <p className="mt-2 text-sm leading-relaxed text-slate-700">
+                  לחצי לשלב הבא והאחרון - הטבילה
+                </p>
+              </div>
+            ) : null}
 
             {renderPhaseNavigation()}
           </Card>
@@ -1102,14 +1223,22 @@ export default function FamilyPurityApp() {
                 data-stage-item
               >
                 <div className="flex flex-col items-center text-center">
-                  <span aria-hidden="true" className="prayer-illustration text-6xl leading-none">
-                    🙏
-                  </span>
-                  <h3 className="mt-3 max-w-lg font-heading text-3xl leading-snug text-text-plum">
-                    ״דָּרֵישׁ רַבִּי עֲקִיבָא:
-                    <br />
-                    אִישׁ וְאִשָּׁה זָכוּ - שְׁכִינָה בֵּינֵיהֶן.״
-                    <span className="mt-1 block text-[12px] text-black">(סוטה י״ז א:ט״ו)</span>
+                  <h3
+                    ref={mikvehQuoteRef}
+                    className="max-w-lg px-1 font-heading text-[1.28rem] leading-snug text-text-plum sm:text-[1.85rem]"
+                    data-mikveh-quote
+                  >
+                    {MIKVEH_QUOTE_LINES.map((line) => (
+                      <span key={line} className="quote-line block">
+                        {renderQuoteLine(line)}
+                      </span>
+                    ))}
+                    <span
+                      className="mt-1 block text-[12px] text-black"
+                      data-quote-citation
+                    >
+                      (סוטה י״ז א:ט״ו)
+                    </span>
                   </h3>
                   <div className="mt-5 flex w-full max-w-md flex-col items-center gap-3">
                     <Button
@@ -1119,7 +1248,7 @@ export default function FamilyPurityApp() {
                       variant="secondary"
                     >
                       <Share2 className="h-4 w-4" />
-                      {isSharingSummary ? "פותחת שיתוף..." : "שמור סיכום תהליך"}
+                      {isSharingSummary ? "פותחת שיתוף..." : "שמרי סיכום בדיקה חודשית"}
                     </Button>
                     {shareSummaryMessage ? (
                       <p className="text-sm text-slate-600">{shareSummaryMessage}</p>
@@ -1200,10 +1329,17 @@ export default function FamilyPurityApp() {
                   <p className="mt-2 max-w-2xl text-slate-700">{activePhase.summary}</p>
                 </div>
 
-                <Button onClick={restartTracker} size="sm" variant="ghost">
-                  <RefreshCcw className="reset-spin h-4 w-4" />
-                  איפוס תהליך
-                </Button>
+                <div className="flex w-full flex-col gap-3 sm:w-auto sm:items-end">
+                  <Button className="w-full sm:w-auto" onClick={restartTracker} size="sm" variant="ghost">
+                    <RefreshCcw className="reset-spin h-4 w-4" />
+                    איפוס תהליך
+                  </Button>
+                  {tracker.activePhase === "clean-days" ? (
+                    <p className="rounded-3xl border border-brand-rose/45 bg-brand-blush/45 p-4 text-sm leading-relaxed text-slate-700 sm:hidden">
+                      {CLEAN_DAYS_BLOOD_NOTICE}
+                    </p>
+                  ) : null}
+                </div>
               </div>
 
               <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
@@ -1831,6 +1967,36 @@ function CheckSlotControl({
       </div>
     </div>
   );
+}
+
+function renderQuoteLetters(text: string, keyPrefix: string) {
+  return [...text].map((character, index) => (
+    <span
+      key={`${keyPrefix}-${character}-${index}`}
+      className="quote-letter"
+      data-quote-letter
+    >
+      {character}
+    </span>
+  ));
+}
+
+function renderQuoteLine(line: string) {
+  return line.split(/(\s+)/).map((segment, segmentIndex) => {
+    if (!segment.trim()) {
+      return (
+        <span key={`space-${segmentIndex}`} aria-hidden="true" className="quote-space">
+          {segment.replace(/ /g, "\u00a0")}
+        </span>
+      );
+    }
+
+    return (
+      <span key={`word-${segmentIndex}`} className="quote-word">
+        {renderQuoteLetters(segment, `word-${segmentIndex}`)}
+      </span>
+    );
+  });
 }
 
 function CoverBloom({ className = "" }: { className?: string }) {
