@@ -128,7 +128,18 @@ function formatCleanDaysShareStatus(tracker: TrackerState) {
 }
 
 function formatShareSummaryLine(label: string, value: string) {
-  return `✅ *${label}:* ${value}`;
+  return `✅ *${label}:*\n${value}`;
+}
+
+function isIosWebKit() {
+  if (typeof navigator === "undefined") {
+    return false;
+  }
+
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  );
 }
 
 function setupLetterWaveReveal(
@@ -138,6 +149,7 @@ function setupLetterWaveReveal(
   const letters = gsap.utils.toArray<HTMLElement>("[data-quote-letter]", root);
   const followUp = root.querySelector<HTMLElement>("[data-quote-citation], [data-quote-followup]");
   const replay = options?.replay ?? false;
+  const softenMotion = isIosWebKit();
 
   if (!letters.length) {
     return () => {};
@@ -193,8 +205,8 @@ function setupLetterWaveReveal(
           y: 14 + Math.sin(index * 0.55) * 10,
           x: Math.cos(index * 0.4) * 4,
           rotateZ: -10 + Math.sin(index * 0.7) * 6,
-          filter: "blur(8px)",
-          scale: 0.9,
+          filter: softenMotion ? "blur(0px)" : "blur(8px)",
+          scale: softenMotion ? 1 : 0.9,
         }),
         {
           autoAlpha: 1,

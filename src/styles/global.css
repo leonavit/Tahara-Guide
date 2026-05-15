@@ -364,6 +364,64 @@ body {
     will-change: transform, opacity, filter;
   }
 
+  /* iOS Safari: per-letter inline boxes break lines and clip descenders with blur layers. */
+  @supports (-webkit-touch-callout: none) {
+    .quote-line {
+      text-wrap: wrap;
+    }
+
+    .stage-animated-title .quote-line,
+    .cover-title .quote-line-hero {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: flex-end;
+      justify-content: flex-start;
+      width: 100%;
+      max-width: 100%;
+      overflow: visible;
+      text-wrap: unset;
+      white-space: nowrap;
+      line-height: 1.5;
+      padding-block: 0.14em 0.36em;
+    }
+
+    .cover-title .quote-line-hero {
+      justify-content: flex-start;
+    }
+
+    .clean-days-complete-note .quote-line,
+    [data-mikveh-quote] .quote-line {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      white-space: normal;
+      line-height: 1.5;
+      padding-block: 0.14em 0.36em;
+    }
+
+    .stage-animated-title .quote-word,
+    .cover-title .quote-word,
+    .clean-days-complete-note .quote-word,
+    [data-mikveh-quote] .quote-word {
+      display: inline-flex;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    .quote-letter {
+      line-height: 1.55;
+      padding-bottom: 0.14em;
+      transform: translateZ(0);
+      will-change: transform, opacity;
+    }
+
+    .stage-animated-title,
+    .cover-title {
+      -webkit-text-size-adjust: 100%;
+      padding-bottom: 0.08em;
+    }
+  }
+
   .mikveh-ready-note,
   .clean-days-complete-note {
     position: relative;
