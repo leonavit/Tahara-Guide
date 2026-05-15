@@ -1,4 +1,4 @@
-const CACHE_NAME = "tahara-guide-v3";
+const CACHE_NAME = "tahara-guide-v4";
 const APP_SHELL = [
   "./",
   "./accessibility/",
