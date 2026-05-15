@@ -1,4 +1,4 @@
-const CACHE_NAME = "tahara-guide-v2";
+const CACHE_NAME = "tahara-guide-v3";
 const APP_SHELL = [
   "./",
   "./accessibility/",
@@ -6,7 +6,6 @@ const APP_SHELL = [
   "./pwa/bloom-icon.svg",
   "./pwa/icon.svg",
   "./favicon.ico",
-  "./images/install-heart.svg",
   "./pwa/icon-192.png",
   "./pwa/icon-512.png",
   "./pwa/apple-touch-icon.png",

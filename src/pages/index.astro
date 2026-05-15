@@ -1,6 +1,5 @@
 ---
 import GuideChatbot from "../components/chatbot/GuideChatbot";
-import { PwaInstallButton } from "../components/pwa/PwaInstallButton";
 import { SiteFooter } from "../components/site/SiteFooter";
 import FamilyPurityApp from "../components/tracker/FamilyPurityApp";
 import FamilyPuritySkeleton from "../components/tracker/FamilyPuritySkeleton.astro";
@@ -13,7 +12,6 @@ const accessibilityHref = `${baseHref}accessibility/`;
 ---
 
 <BaseLayout>
-  <PwaInstallButton client:only="react" />
   <main class="relative overflow-hidden">
     <div class="absolute inset-x-0 top-0 -z-10 h-[34rem] bg-soft-radial"></div>
 
