@@ -292,6 +292,113 @@ function setupLetterWaveReveal(
   };
 }
 
+function setupSimpleTitleReveal(
+  root: HTMLElement,
+  options?: { immediate?: boolean; replay?: boolean },
+) {
+  const replay = options?.replay ?? false;
+
+  if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    gsap.set(root, { autoAlpha: 1, y: 0 });
+    return () => {};
+  }
+
+  let animationContext: gsap.Context | null = null;
+  let hasStarted = false;
+  let isInView = false;
+
+  const setHiddenState = () => {
+    gsap.set(root, { autoAlpha: 0, y: 10 });
+  };
+
+  setHiddenState();
+
+  const resetAnimation = () => {
+    animationContext?.revert();
+    animationContext = null;
+    setHiddenState();
+
+    if (replay) {
+      hasStarted = false;
+    }
+  };
+
+  const playAnimation = () => {
+    if (!replay && hasStarted) {
+      return;
+    }
+
+    animationContext?.revert();
+    animationContext = null;
+    setHiddenState();
+    hasStarted = true;
+
+    animationContext = gsap.context(() => {
+      gsap.to(root, {
+        autoAlpha: 1,
+        y: 0,
+        duration: 0.52,
+        ease: "power3.out",
+      });
+    }, root);
+  };
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      const entry = entries[0];
+
+      if (!entry) {
+        return;
+      }
+
+      if (entry.isIntersecting) {
+        if (!isInView) {
+          isInView = true;
+          playAnimation();
+        }
+
+        if (!replay) {
+          observer.disconnect();
+        }
+      } else if (replay && isInView) {
+        isInView = false;
+        resetAnimation();
+      }
+    },
+    { threshold: 0.2, rootMargin: "0px 0px -5% 0px" },
+  );
+
+  if (options?.immediate) {
+    playAnimation();
+
+    return () => {
+      animationContext?.revert();
+    };
+  }
+
+  observer.observe(root);
+
+  const revealFrame = window.requestAnimationFrame(() => {
+    const rect = root.getBoundingClientRect();
+    const isVisible = rect.top < window.innerHeight * 0.92 && rect.bottom > window.innerHeight * 0.08;
+
+    if (isVisible && !isInView) {
+      isInView = true;
+      playAnimation();
+
+      if (!replay) {
+        observer.disconnect();
+      }
+    }
+  });
+
+  return () => {
+    window.cancelAnimationFrame(revealFrame);
+    observer.disconnect();
+    animationContext?.revert();
+  };
+}
+
 function buildTrackerSummary(tracker: TrackerState) {
   const cleanDayStart = tracker.hefsekDate ? calculateCleanDayStart(tracker.hefsekDate) : "";
 
@@ -1290,19 +1397,19 @@ export default function FamilyPurityApp() {
         className="paper-shell overflow-hidden rounded-[2.75rem] border border-white/70 px-6 py-10 shadow-soft sm:px-8 sm:py-12"
       >
         <div className="mx-auto flex min-h-[68vh] max-w-4xl flex-col items-center justify-center lg:min-h-[40vh]">
-          <div className="flex w-full max-w-3xl items-center justify-center gap-0">
+          <div className="hero-heading-stack flex w-full max-w-3xl flex-col items-center">
             <div data-hero-bloom className="shrink-0">
-              <CoverBloom className="hero-bloom w-[6.75rem] sm:w-[8rem]" />
+              <CoverBloom className="hero-bloom w-[5.25rem] sm:w-[7rem]" />
             </div>
 
-            <div className="text-right">
+            <div className="w-full text-center">
               <p
-                className="cover-title text-[1.9rem] text-text-plum sm:text-5xl lg:text-6xl"
+                className="cover-title w-full text-[1.9rem] text-text-plum sm:text-5xl lg:text-6xl"
                 data-hero-title
               >
                 <span className="quote-line quote-line-hero block">{renderQuoteLine("טהרת המשפחה")}</span>
               </p>
-              <p data-hero-line className="mt-2 text-base text-text-plum/85 sm:text-xl">
+              <p data-hero-line className="mt-1 text-base text-text-plum/85 sm:mt-2 sm:text-xl">
                 מדריך מעשי לציבור הכללי
               </p>
             </div>
@@ -2217,6 +2324,7 @@ function renderQuoteLine(line: string) {
 
 function AnimatedStageTitle({ text }: { text: string }) {
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const plainIosTitle = isIosWebKit();
 
   useLayoutEffect(() => {
     const root = titleRef.current;
@@ -2225,12 +2333,22 @@ function AnimatedStageTitle({ text }: { text: string }) {
       return;
     }
 
-    return setupLetterWaveReveal(root, { replay: true });
-  }, [text]);
+    return plainIosTitle
+      ? setupSimpleTitleReveal(root, { replay: true })
+      : setupLetterWaveReveal(root, { replay: true });
+  }, [text, plainIosTitle]);
 
   return (
-    <h2 ref={titleRef} className="stage-animated-title mt-2 font-heading text-3xl text-slate-900">
-      <span className="quote-line block">{renderQuoteLine(text)}</span>
+    <h2
+      ref={titleRef}
+      className={[
+        "stage-animated-title mt-2 font-heading text-slate-900",
+        plainIosTitle
+          ? "stage-animated-title--plain text-[1.75rem] leading-normal sm:text-3xl"
+          : "text-3xl",
+      ].join(" ")}
+    >
+      {plainIosTitle ? text : <span className="quote-line block">{renderQuoteLine(text)}</span>}
     </h2>
   );
 }
