@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "מדריך טהרת המשפחה",
+  "name": "טהרת המשפחה",
   "short_name": "טהרה",
-  "description": "מדריך אינטראקטיבי בעברית לניהול פרטי של שלבי הטהרה, עם שמירה מקומית במכשיר.",
+  "description": "כלי עזר אישי למעקב אחרי ימי הטהרה צעד אחר צעד",
   "lang": "he",
   "dir": "rtl",
   "start_url": "./",
@@ -13,7 +13,7 @@
   "theme_color": "#875664",
   "icons": [
     {
-      "src": "./pwa/icon.svg",
+      "src": "./pwa/bloom-icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"

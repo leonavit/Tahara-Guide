@@ -6,7 +6,8 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "check": "astro check"
+    "check": "astro check",
+    "generate:pwa-icons": "node scripts/generate-pwa-icons.mjs"
   },
   "keywords": [],
   "author": "",
@@ -31,6 +32,7 @@
     "@astrojs/check": "^0.9.9",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "sharp": "^0.34.5",
     "typescript": "^6.0.3"
   }
 }

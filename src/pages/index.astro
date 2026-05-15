@@ -1,5 +1,7 @@
 ---
 import GuideChatbot from "../components/chatbot/GuideChatbot";
+import { PwaInstallButton } from "../components/pwa/PwaInstallButton";
+import { SiteFooter } from "../components/site/SiteFooter";
 import FamilyPurityApp from "../components/tracker/FamilyPurityApp";
 import FamilyPuritySkeleton from "../components/tracker/FamilyPuritySkeleton.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
@@ -10,10 +12,8 @@ const baseHref = import.meta.env.BASE_URL.endsWith("/")
 const accessibilityHref = `${baseHref}accessibility/`;
 ---
 
-<BaseLayout
-  title="מדריך טהרת המשפחה | כלי עזר פרטי"
-  description="אפליקציית מעקב פרטית בעברית לטהרת המשפחה, עם לוגיקת שלבים, תאריכים, והכנות לטבילה."
->
+<BaseLayout>
+  <PwaInstallButton client:only="react" />
   <main class="relative overflow-hidden">
     <div class="absolute inset-x-0 top-0 -z-10 h-[34rem] bg-soft-radial"></div>
 
@@ -22,14 +22,7 @@ const accessibilityHref = `${baseHref}accessibility/`;
         <FamilyPuritySkeleton slot="fallback" />
       </FamilyPurityApp>
 
-      <footer class="pb-6 text-center text-sm text-slate-600">
-        <p>בכל שאלה הלכתית יש לפנות לרב.</p>
-        <p class="mt-2">
-          <a class="font-semibold text-text-plum underline decoration-text-plum/40 underline-offset-4" href={accessibilityHref}>
-            הצהרת נגישות
-          </a>
-        </p>
-      </footer>
+      <SiteFooter accessibilityHref={accessibilityHref} client:only="react" />
 
       <GuideChatbot client:only="react" />
     </div>

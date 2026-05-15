@@ -13,7 +13,6 @@ import {
   Droplets,
   Info,
   MoonStar,
-  Phone,
   RefreshCcw,
   Scissors,
   Share2,
@@ -1404,12 +1403,12 @@ export default function FamilyPurityApp() {
 
             <div className="w-full text-center">
               <p
-                className="cover-title w-full text-[1.9rem] text-text-plum sm:text-5xl lg:text-6xl"
+                className="cover-title w-full text-[2.2rem] text-text-plum sm:text-5xl lg:text-6xl"
                 data-hero-title
               >
                 <span className="quote-line quote-line-hero block">{renderQuoteLine("טהרת המשפחה")}</span>
               </p>
-              <p data-hero-line className="mt-1 text-base text-text-plum/85 sm:mt-2 sm:text-xl">
+              <p data-hero-line className="mt-0 text-base text-text-plum/85 sm:mt-2 sm:text-xl">
                 מדריך מעשי לציבור הכללי
               </p>
             </div>
@@ -1419,26 +1418,45 @@ export default function FamilyPurityApp() {
             data-hero-line
             className="mt-6 max-w-3xl text-center text-base font-normal leading-8 text-slate-700 sm:text-lg sm:leading-9"
           >
-            כלי עזר אישי ופרטי למעקב אחר ימי הטהרה וההכנה לטבילה. פשוט נגיש ומלווה אותך צעד אחר צעד,
-            מהווסת ועד ליל הטבילה.
+            כלי עזר אישי ופרטי למעקב אחר ימי הטהרה וההכנה לטבילה.
+            <br className="hidden sm:inline" aria-hidden="true" />
+            {" "}
+            פשוט נגיש ומלווה אותך צעד אחר צעד, מהווסת ועד ליל הטבילה.
           </p>
 
           <div className="mt-7 flex w-full max-w-3xl flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center">
-            <Button data-hero-cta variant="ghost" onClick={() => setActiveOverlay("intro")}>
-              הקדמה בקטנה
-              <Info className="h-4 w-4" />
-            </Button>
-            <Button data-hero-cta variant="ghost" onClick={() => setActiveOverlay("laws")}>
-              הלכות
-              <BookOpenText className="h-4 w-4" />
-            </Button>
-            <Button data-hero-cta variant="ghost" onClick={scrollToContactSection}>
+            <div className="flex gap-3 sm:contents">
+              <Button
+                className="min-w-0 flex-1 sm:flex-none"
+                data-hero-cta
+                variant="ghost"
+                onClick={() => setActiveOverlay("intro")}
+              >
+                הקדמה בקטנה
+                <Info className="h-4 w-4 shrink-0" />
+              </Button>
+              <Button
+                className="min-w-0 flex-1 sm:flex-none"
+                data-hero-cta
+                variant="ghost"
+                onClick={() => setActiveOverlay("laws")}
+              >
+                הלכות
+                <BookOpenText className="h-4 w-4 shrink-0" />
+              </Button>
+            </div>
+            <Button
+              className="w-full sm:w-auto"
+              data-hero-cta
+              variant="ghost"
+              onClick={scrollToContactSection}
+            >
               יצירת קשר
-              <Phone className="h-4 w-4" />
+              <WhatsAppIcon className="h-4 w-4 shrink-0" />
             </Button>
-            <Button data-hero-cta onClick={revealTracker}>
+            <Button className="w-full sm:w-auto" data-hero-cta onClick={revealTracker}>
               התחילי תהליך
-              <ArrowDown className="cta-arrow-bob h-4 w-4" />
+              <ArrowDown className="cta-arrow-bob h-4 w-4 shrink-0" />
             </Button>
           </div>
         </div>
@@ -1951,13 +1969,6 @@ function ContactCard({
           <p className="mt-3 text-base font-semibold text-slate-800">{phone}</p>
         </div>
         <div className="flex flex-col items-center gap-2">
-          <a
-            aria-label={`חיוג אל ${name}`}
-            className="rounded-2xl bg-brand-blush/45 p-3 text-text-plum transition hover:bg-brand-blush/65"
-            href={`tel:${phone.replace(/-/g, "")}`}
-          >
-            <Phone className="h-5 w-5" />
-          </a>
           <a
             aria-label={`פתיחת ווטסאפ עם ${name}`}
             className="rounded-2xl bg-[#e3f7ec] p-3 text-[#1f7a4d] transition hover:bg-[#d3f2e3]"
